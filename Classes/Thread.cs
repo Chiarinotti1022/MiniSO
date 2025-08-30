@@ -8,27 +8,13 @@ namespace MiniSO.Classes
 {
     internal class Thread
     {
-        public enum Estados
-        {
-            Criado = 0,
-            Pronto = 1,
-            Executando = 2,
-            Aguardando = 3,
-            Finalizado = 4
-        }
-        public enum Prioridade
-        {
-            Baixa = 0,
-            Media = 1,
-            Alta = 2
-        }
         public int tId { get; set; }
         public int pIdPai { get; set; }
         public int tamanho { get; set; }    
-        public Estados estado { get; set; }
-        public Prioridade prioridade { get; set; }
+        public Processo.Estados estado { get; set; }
+        public Processo.Prioridade prioridade { get; set; }
 
-        public Thread(int tid, int pidPai, int tamanho, Estados estado, Prioridade prioridade)
+        public Thread(int tid, int pidPai, int tamanho, Processo.Estados estado, Processo.Prioridade prioridade)
         {
             this.prioridade = prioridade;
             this.estado = estado;
@@ -39,6 +25,12 @@ namespace MiniSO.Classes
 
         public void Executar()
         {
+            estado = Processo.Estados.Executando;
         }
+        public void Bloquear()
+        {
+            estado = Processo.Estados.Bloqueado;
+        }
+
     }
 }

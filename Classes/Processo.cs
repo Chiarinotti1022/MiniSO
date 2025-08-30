@@ -13,14 +13,13 @@ namespace MiniSO.Classes
             Criado = 0,
             Pronto = 1,
             Executando = 2,
-            Aguardando = 3,
+            Bloqueado = 3,
             Finalizado = 4
         }
         public enum Prioridade
         {
             Baixa = 0,
-            Media = 1,
-            Alta = 2
+            Alta = 1
         }
         public int pId {  get; set; }
         public Estados estado { get; set; }
@@ -37,9 +36,18 @@ namespace MiniSO.Classes
 
         public void Executar() 
         {
+            estado = Estados.Executando;
+            Console.WriteLine($"Processo: {pId} executando");
         }
         public void Bloquear()
         {
+            estado = Estados.Bloqueado;
+            Console.WriteLine($"Processo: {pId} bloqueado");
+        }
+        public void Finalizar()
+        {
+            estado = Estados.Finalizado;
+            Console.WriteLine($"Processo: {pId} finalizado");
         }
         public void CriarThread()
         {

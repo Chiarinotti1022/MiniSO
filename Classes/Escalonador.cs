@@ -8,7 +8,7 @@ namespace MiniSO.Classes
 {
     internal class Escalonador
     {
-        public string ?politica {  get; set; }
+        public string ?politica { get; set; }
 
         public Escalonador(string politica)
         {
