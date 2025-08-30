@@ -15,10 +15,10 @@ namespace MiniSO.Classes
             this.politica = politica;
         }
 
-        public void escalonar()
+        public void Escalonar()
         {
         }
-        public void definirPolitica()
+        public void DefinirPolitica()
         {
         }
     }
