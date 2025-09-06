@@ -39,20 +39,54 @@ namespace MiniSO.Classes
             this.threads = new List<Thread>();
         }
 
-        public void Executar() 
+        public void ExecutarRR(int quantum)
         {
-            foreach (Thread t in threads)
+            this.estado = Estados.Executando;
+            
+            var threadsProntas = threads.Where(t => t.estado == Estados.Pronto).ToList();
+
+            if (threadsProntas.Count == 0)
+                return;
+
+            int quantumPorThread = Math.Max(1, quantum / threadsProntas.Count);
+
+            foreach (var t in threadsProntas)
             {
-                t.Executar();
-                Console.Write($"Thread {t.tId} executando");
+                int unidades = 0;
+                while (unidades < quantumPorThread && t.pc < t.countPc)
+                {
+                   
+                    t.Executar();
+                    unidades++;
+                }
+                
+
+                Console.WriteLine($"Thread {t.tId} executou {unidades} unidades; pc={t.pc}/{t.countPc}");
+
                 if (t.pc >= t.countPc)
                 {
+                    t.estado = Estados.Finalizado;
                     FinalizarThread(t);
-                    Console.Write($"Thread {t.tId} finalizada");
+                    Console.WriteLine($"Thread {t.tId} finalizada");
+                } else
+                {
+                    t.estado = Estados.Pronto;
                 }
             }
-            Console.WriteLine($"Processo: {pId} executando");
+            
+            if (threads.All(th => th.estado == Estados.Finalizado))
+            {
+                this.estado = Estados.Finalizado;
+                Console.WriteLine($"Processo {pId} finalizado");
+            } else
+            {
+                this.estado = Estados.Pronto;
+            }
+
+            
         }
+
+
         public void Bloquear()
         {
             estado = Estados.Bloqueado;

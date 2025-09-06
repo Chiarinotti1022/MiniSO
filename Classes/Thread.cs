@@ -39,11 +39,6 @@ namespace MiniSO.Classes
             {
                 pc += 1;
             }
-            estado = Estados.Executando;
-        }
-        public void Bloquear()
-        {
-            estado = Estados.Bloqueado;
         }
 
     }
