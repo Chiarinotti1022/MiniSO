@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.Metrics;
 using System.Linq;
+using System.Runtime.ConstrainedExecution;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -11,25 +13,37 @@ namespace MiniSO.Classes
         public int tId { get; set; }
         public int pIdPai { get; set; }
         public int tamanho { get; set; }    
-        public Processo.Estados estado { get; set; }
-        public Processo.Prioridade prioridade { get; set; }
+        public Estados estado { get; set; }
+        public Prioridade prioridade { get; set; }
 
-        public Thread(int tid, int pidPai, int tamanho, Processo.Estados estado, Processo.Prioridade prioridade)
+        public int pc { get; set; }
+        public int countPc { get; set; }
+
+        public Thread(int tid, int pidPai, int tamanho, Prioridade prioridade, int countPc)
         {
             this.prioridade = prioridade;
-            this.estado = estado;
+            this.estado = Estados.Pronto;
             this.tamanho = tamanho;
             this.tId = tid;
             this.pIdPai = pidPai;
+            this.countPc = countPc;
         }
 
         public void Executar()
         {
-            estado = Processo.Estados.Executando;
+            if (estado == Estados.Pronto)
+            {
+                estado = Estados.Executando;
+            }
+            if (this.pc < countPc && estado == Estados.Executando)
+            {
+                pc += 1;
+            }
+            estado = Estados.Executando;
         }
         public void Bloquear()
         {
-            estado = Processo.Estados.Bloqueado;
+            estado = Estados.Bloqueado;
         }
 
     }

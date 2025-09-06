@@ -28,12 +28,12 @@ namespace MiniSO.Classes
         {
 
         }
-        public void CriarProcesso(int pid, Processo.Estados estado, Processo.Prioridade prioridade, int tamanho)
+        public void CriarProcesso(int pid, Prioridade prioridade, int tamanho)
         {
             if (memoria.alocar(tamanho))
             {
-                Processo p = new Processo(pid, estado, prioridade, tamanho);
-                if (p.prioridade == Processo.Prioridade.Alta)
+                Processo p = new (pid, prioridade, tamanho);
+                if (p.prioridade == Prioridade.Alta)
                 {
                     processosAlta.Enqueue(p);
                 }

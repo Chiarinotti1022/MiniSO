@@ -18,8 +18,10 @@ namespace MiniSO.Classes
         public void Escalonar()
         {
         }
-        public void DefinirPolitica()
+        public void DefinirPolitica(string p)
         {
+
+
         }
     }
 }

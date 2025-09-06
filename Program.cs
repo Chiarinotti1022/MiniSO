@@ -1,3 +1,5 @@
+using MiniSO.Classes;
+
 namespace MiniSO
 {
     internal static class Program
@@ -6,7 +8,9 @@ namespace MiniSO
         [STAThread]
         static void Main()
         {
-           
+            
+
+
             ApplicationConfiguration.Initialize();
             Application.Run(new Form1());
         }
