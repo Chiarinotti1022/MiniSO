@@ -17,6 +17,7 @@
 
         private void InitializeComponent()
         {
+            components = new System.ComponentModel.Container();
             lvProcessos = new ListView();
             chPid = new ColumnHeader();
             chEstado = new ColumnHeader();
@@ -28,6 +29,7 @@
             buttonPararSO = new Button();
             progressBarMemoria = new ProgressBar();
             lblMemoria = new Label();
+            timer1 = new System.Windows.Forms.Timer(components);
             SuspendLayout();
             // 
             // lvProcessos
@@ -117,7 +119,6 @@
             Controls.Add(lblMemoria);
             Name = "Form1";
             Text = "MiniSO - Simulador de Sistema Operacional";
-            Load += Form1_Load;
             ResumeLayout(false);
         }
 
@@ -134,5 +135,6 @@
         private Button buttonPararSO;
         private ProgressBar progressBarMemoria;
         private Label lblMemoria;
+        private System.Windows.Forms.Timer timer1;
     }
 }

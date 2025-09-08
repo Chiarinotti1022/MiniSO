@@ -5,6 +5,7 @@ using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
+using static MiniSO.Classes.Processador;
 
 namespace MiniSO.Classes
 {
@@ -29,7 +30,7 @@ namespace MiniSO.Classes
         public int tamanhoMemoria { get; set; }
 
         public List<Thread> threads { get; set; }
-
+        public int QuantumAtual { get; set; } = 0;
         public Processo(int pid, Prioridade prioridade, int tamanho)
         {
             this.pId = pid;
@@ -37,16 +38,21 @@ namespace MiniSO.Classes
             this.prioridade = prioridade;
             this.tamanhoMemoria = tamanho;
             this.threads = new List<Thread>();
+
         }
 
         public void ExecutarRR(int quantum)
         {
-            this.estado = Estados.Executando;
-            
+            QuantumAtual = quantum;
+            estado = Estados.Executando;
+
             var threadsProntas = threads.Where(t => t.estado == Estados.Pronto).ToList();
 
             if (threadsProntas.Count == 0)
+            {
+                Finalizar(); // seta estado = Finalizado e limpa threads
                 return;
+            }
 
             int quantumPorThread = Math.Max(1, quantum / threadsProntas.Count);
 
@@ -55,36 +61,22 @@ namespace MiniSO.Classes
                 int unidades = 0;
                 while (unidades < quantumPorThread && t.pc < t.countPc)
                 {
-                   
                     t.Executar();
                     unidades++;
                 }
-                
-
-                Console.WriteLine($"Thread {t.tId} executou {unidades} unidades; pc={t.pc}/{t.countPc}");
 
                 if (t.pc >= t.countPc)
-                {
-                    t.estado = Estados.Finalizado;
                     FinalizarThread(t);
-                    Console.WriteLine($"Thread {t.tId} finalizada");
-                } else
-                {
-                    t.estado = Estados.Pronto;
-                }
-            }
-            
-            if (threads.All(th => th.estado == Estados.Finalizado))
-            {
-                this.estado = Estados.Finalizado;
-                Console.WriteLine($"Processo {pId} finalizado");
-            } else
-            {
-                this.estado = Estados.Pronto;
             }
 
-            
+            // 🔥 se todas threads morreram → processo finalizado
+            if (threads.Count == 0)
+                Finalizar();
+            else
+                estado = Estados.Pronto;
         }
+
+
 
 
         public void Bloquear()

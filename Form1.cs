@@ -3,6 +3,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Drawing;
 
 namespace MiniSO
 {
@@ -14,10 +15,22 @@ namespace MiniSO
         public Form1()
         {
             InitializeComponent();
+
             sistema = new Sistema();
             escalonador = new Escalonador("RR", 10);
+            sistema.IniciarSistema(10000);
 
-            // Conecta os eventos dos botões
+            // Evento para atualizar lista sempre que escalonador trocar de processo
+            escalonador.ProcessoTrocado += () =>
+            {
+                BeginInvoke(new Action(() =>
+                {
+                    AtualizarListaProcessos();
+                    AtualizarMemoria();
+                }));
+            };
+
+            // Eventos dos botões
             buttonCriarProcesso.Click += buttonCriarProcesso_Click;
             buttonIniciarSO.Click += buttonIniciarSO_Click;
             buttonPararSO.Click += buttonPararSO_Click;
@@ -38,67 +51,88 @@ namespace MiniSO
         private async void buttonIniciarSO_Click(object sender, EventArgs e)
         {
             buttonIniciarSO.Enabled = false;
-            sistema.executar = true;
 
-            sistema.IniciarSistema(10000);
-
-            while (sistema.executar)
+            while (!IsDisposed)
             {
-                escalonador.Escalonar(sistema.processos);
+                // chama o escalonador com delay de 1 segundo
+                await sistema.escalonador.Escalonar(sistema.processos, 1000);
 
+                // Atualiza visual após cada troca de processo
                 AtualizarListaProcessos();
                 AtualizarMemoria();
-
-                await Task.Delay(500);
             }
+
 
             buttonIniciarSO.Enabled = true;
         }
 
         private void buttonPararSO_Click(object sender, EventArgs e)
         {
-            sistema.executar = false;
+            sistema.EncerrarSistema();
         }
 
         private void AtualizarListaProcessos()
         {
+            lvProcessos.BeginUpdate();
             lvProcessos.Items.Clear();
 
-            foreach (var p in sistema.processos)
+            var processosOrdenados = sistema.processos
+                .OrderByDescending(p => p.estado == Estados.Executando ? 3 :
+                                        p.estado == Estados.Pronto ? 2 :
+                                        p.estado == Estados.Bloqueado ? 1 : 0)
+                .ThenBy(p => p.pId);
+
+            foreach (var p in processosOrdenados)
             {
-                var item = new ListViewItem(p.pId.ToString());
+                var item = new ListViewItem($"P{p.pId}");
                 item.SubItems.Add(p.estado.ToString());
                 item.SubItems.Add(p.prioridade.ToString());
                 item.SubItems.Add(p.tamanhoMemoria.ToString());
-                item.SubItems.Add(""); // Threads não usam PC nesta linha
+                item.SubItems.Add(p.QuantumAtual.ToString());
+
+                switch (p.estado)
+                {
+                    case Estados.Executando: item.BackColor = Color.LightGreen; break;
+                    case Estados.Pronto: item.BackColor = Color.LightYellow; break;
+                    case Estados.Bloqueado: item.BackColor = Color.LightCoral; break;
+                    case Estados.Finalizado: item.BackColor = Color.LightGray; break;
+                }
+
                 lvProcessos.Items.Add(item);
 
+                // Threads do processo
                 foreach (var t in p.threads)
                 {
-                    var tItem = new ListViewItem("   └ " + t.tId);
+                    var tItem = new ListViewItem($"  └ T{t.tId}");
                     tItem.SubItems.Add(t.estado.ToString());
-                    tItem.SubItems.Add(""); // Pode colocar prioridade da thread se quiser
+                    tItem.SubItems.Add(""); // prioridade opcional
                     tItem.SubItems.Add(t.tamanho.ToString());
                     tItem.SubItems.Add($"{t.pc}/{t.countPc}");
+
+                    switch (t.estado)
+                    {
+                        case Estados.Executando: tItem.BackColor = Color.LightGreen; break;
+                        case Estados.Pronto: tItem.BackColor = Color.LightYellow; break;
+                        case Estados.Bloqueado: tItem.BackColor = Color.LightCoral; break;
+                        case Estados.Finalizado: tItem.BackColor = Color.LightGray; break;
+                    }
+
                     lvProcessos.Items.Add(tItem);
                 }
             }
+
+            lvProcessos.EndUpdate();
         }
 
         private void AtualizarMemoria()
         {
             int totalMemoria = sistema.memoria.total;
-            int usada = sistema.processos.Sum(p => p.estado != Estados.Finalizado ? p.tamanhoMemoria : 0);
+            int usada = totalMemoria - sistema.memoria.livre;
 
             progressBarMemoria.Maximum = totalMemoria;
             progressBarMemoria.Value = Math.Min(usada, totalMemoria);
 
             lblMemoria.Text = $"Uso de Memória: {usada}/{totalMemoria}";
-        }
-
-        private void Form1_Load(object sender, EventArgs e)
-        {
-
         }
     }
 }

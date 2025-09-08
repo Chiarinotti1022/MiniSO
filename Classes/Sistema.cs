@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace MiniSO.Classes
 {
@@ -13,54 +11,70 @@ namespace MiniSO.Classes
         public Processador processador { get; set; }
         public Escalonador escalonador { get; set; }
 
+        private readonly Random rand = new Random();
         public List<Processo> processos = new List<Processo>();
-        public bool executar = true;
+        private CancellationTokenSource cts; 
 
         public void IniciarSistema(int memoriaTotal)
         {
             escalonador = new Escalonador("RR", 10);
             memoria = new Memoria(memoriaTotal);
-            Random rand = new Random();
-            while (executar)
+            cts = new CancellationTokenSource();
+
+            Task.Run(async () =>
             {
-                foreach(var p in processos)
+                while (!cts.Token.IsCancellationRequested)
                 {
-                    if (p.estado == Estados.Finalizado)
-                    {
-                        memoria.liberar(p.tamanhoMemoria);
+
+                    foreach (var p in processos) { 
+                        if(p.estado == Estados.Finalizado)
+                        {
+                            memoria.liberar(p.tamanhoMemoria);
+                        }
                     }
+
+                    /*
+                    processos.RemoveAll(p =>
+                    {
+                        if (p.estado == Estados.Finalizado)
+                        {
+                            memoria.liberar(p.tamanhoMemoria);
+                            return true;
+                        }
+                        return false;
+                    });*/
+
+                    /*
+                    CriarProcesso(rand.Next(0, 100),
+                                  (Prioridade)rand.Next(0, 2),
+                                  rand.Next(50, 300));*/
+
+
+                    
+                    escalonador.Escalonar(processos, 1000);
+
+                   
+                    await Task.Delay(3000, cts.Token);
                 }
-               
-                
-                processos.Add(CriarProcesso(rand.Next(0, 100), (Prioridade)rand.Next(0, 2), rand.Next(50, 300)));
-                escalonador.Escalonar(processos);
-                
-                System.Threading.Thread.Sleep(10000);
-            }
+            }, cts.Token);
         }
 
         public void EncerrarSistema()
         {
-            executar = false;
+            cts?.Cancel();
         }
 
-        public void ChamarEscalonador()
-        {
-
-        }
         public Processo CriarProcesso(int pid, Prioridade prioridade, int tamanho)
         {
             if (memoria.alocar(tamanho))
             {
-                Processo p = new (pid, prioridade, tamanho);
+                Processo p = new Processo(pid, prioridade, tamanho);
+                p.CriarThreads();
                 processos.Add(p);
+
                 return p;
-
-
             }
             return null;
-            
-    
         }
     }
 }
