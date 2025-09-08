@@ -15,7 +15,6 @@ namespace MiniSO
         {
             InitializeComponent();
             sistema = new Sistema();
-            sistema.IniciarSistema(10000);
             escalonador = new Escalonador("RR", 10);
 
             // Conecta os eventos dos botões
@@ -40,6 +39,8 @@ namespace MiniSO
         {
             buttonIniciarSO.Enabled = false;
             sistema.executar = true;
+
+            sistema.IniciarSistema(10000);
 
             while (sistema.executar)
             {
@@ -93,6 +94,11 @@ namespace MiniSO
             progressBarMemoria.Value = Math.Min(usada, totalMemoria);
 
             lblMemoria.Text = $"Uso de Memória: {usada}/{totalMemoria}";
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+
         }
     }
 }

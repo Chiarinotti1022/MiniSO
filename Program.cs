@@ -8,9 +8,6 @@ namespace MiniSO
         [STAThread]
         static void Main()
         {
-            
-
-
             ApplicationConfiguration.Initialize();
             Application.Run(new Form1());
         }

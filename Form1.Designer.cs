@@ -29,51 +29,85 @@
             progressBarMemoria = new ProgressBar();
             lblMemoria = new Label();
             SuspendLayout();
-
-            // ListView
-            lvProcessos.Location = new Point(12, 12);
-            lvProcessos.Size = new Size(560, 426);
-            lvProcessos.View = View.Details;
+            // 
+            // lvProcessos
+            // 
+            lvProcessos.Columns.AddRange(new ColumnHeader[] { chPid, chEstado, chPrioridade, chMemoria, chPC });
             lvProcessos.FullRowSelect = true;
             lvProcessos.GridLines = true;
-            lvProcessos.Columns.AddRange(new ColumnHeader[] { chPid, chEstado, chPrioridade, chMemoria, chPC });
-
+            lvProcessos.Location = new Point(12, 12);
+            lvProcessos.Name = "lvProcessos";
+            lvProcessos.Size = new Size(560, 426);
+            lvProcessos.TabIndex = 0;
+            lvProcessos.UseCompatibleStateImageBehavior = false;
+            lvProcessos.View = View.Details;
+            // 
+            // chPid
+            // 
             chPid.Text = "PID";
             chPid.Width = 50;
+            // 
+            // chEstado
+            // 
             chEstado.Text = "Estado";
             chEstado.Width = 100;
+            // 
+            // chPrioridade
+            // 
             chPrioridade.Text = "Prioridade";
             chPrioridade.Width = 100;
+            // 
+            // chMemoria
+            // 
             chMemoria.Text = "Memória";
             chMemoria.Width = 80;
+            // 
+            // chPC
+            // 
             chPC.Text = "PC";
             chPC.Width = 80;
-
-            // Buttons
-            buttonCriarProcesso.Text = "Criar Processo";
+            // 
+            // buttonCriarProcesso
+            // 
             buttonCriarProcesso.Location = new Point(590, 20);
+            buttonCriarProcesso.Name = "buttonCriarProcesso";
             buttonCriarProcesso.Size = new Size(180, 30);
-            //buttonCriarProcesso.Click += buttonCriarProcesso_Click;
-
-            buttonIniciarSO.Text = "Iniciar Sistema";
+            buttonCriarProcesso.TabIndex = 1;
+            buttonCriarProcesso.Text = "Criar Processo";
+            // 
+            // buttonIniciarSO
+            // 
             buttonIniciarSO.Location = new Point(590, 60);
+            buttonIniciarSO.Name = "buttonIniciarSO";
             buttonIniciarSO.Size = new Size(180, 30);
-            //buttonIniciarSO.Click += buttonIniciarSO_Click;
-
-            buttonPararSO.Text = "Parar Sistema";
+            buttonIniciarSO.TabIndex = 2;
+            buttonIniciarSO.Text = "Iniciar Sistema";
+            // 
+            // buttonPararSO
+            // 
             buttonPararSO.Location = new Point(590, 100);
+            buttonPararSO.Name = "buttonPararSO";
             buttonPararSO.Size = new Size(180, 30);
-            //buttonPararSO.Click += buttonPararSO_Click;
-
-            // ProgressBar e Label
+            buttonPararSO.TabIndex = 3;
+            buttonPararSO.Text = "Parar Sistema";
+            // 
+            // progressBarMemoria
+            // 
             progressBarMemoria.Location = new Point(590, 160);
+            progressBarMemoria.Name = "progressBarMemoria";
             progressBarMemoria.Size = new Size(180, 25);
-
+            progressBarMemoria.TabIndex = 4;
+            // 
+            // lblMemoria
+            // 
             lblMemoria.Location = new Point(590, 140);
+            lblMemoria.Name = "lblMemoria";
             lblMemoria.Size = new Size(180, 20);
+            lblMemoria.TabIndex = 5;
             lblMemoria.Text = "Uso de Memória: 0%";
-
-            // Form
+            // 
+            // Form1
+            // 
             ClientSize = new Size(800, 450);
             Controls.Add(lvProcessos);
             Controls.Add(buttonCriarProcesso);
@@ -83,8 +117,8 @@
             Controls.Add(lblMemoria);
             Name = "Form1";
             Text = "MiniSO - Simulador de Sistema Operacional";
+            Load += Form1_Load;
             ResumeLayout(false);
-            PerformLayout();
         }
 
         #endregion
