@@ -56,7 +56,7 @@ namespace MiniSO
                 {
                     case Estados.Executando: item.BackColor = Color.LightGreen; break;
                     case Estados.Pronto: item.BackColor = Color.LightYellow; break;
-                    case Estados.Bloqueado: item.BackColor = Color.LightCoral; break;
+                    case Estados.Bloqueado: item.BackColor = Color.Orange; break;
                     case Estados.Finalizado: item.BackColor = Color.LightGray; break;
                 }
 
@@ -106,7 +106,7 @@ namespace MiniSO
             if (sistema.escalonador == null)
             {
                 // ativa gerador automático a cada 2s como exemplo
-                sistema.IniciarSistema(10000, autoCriarIntervalMs: 2000);
+                sistema.IniciarSistema(800, autoCriarIntervalMs: 2000);
                 escalonador = sistema.escalonador;
 
                 escalonador.ProcessoTrocado -= OnProcessoTrocado;
@@ -114,6 +114,9 @@ namespace MiniSO
 
                 sistema.ProcessoFinalizado -= OnProcessoFinalizado;
                 sistema.ProcessoFinalizado += OnProcessoFinalizado;
+
+                sistema.ProcessoDesbloqueado -= OnProcessoDesbloqueado;
+                sistema.ProcessoDesbloqueado += OnProcessoDesbloqueado;
             }
 
             // garante o texto correto do botão de pausa
@@ -190,5 +193,25 @@ namespace MiniSO
                 buttonPararSO.Text = "Parar Sistema";
             }
         }
+
+        private void OnProcessoDesbloqueado(Processo p)
+        {
+            BeginInvoke(new Action(() =>
+            {
+                if (lstLog != null)
+                {
+                    lstLog.Items.Add($"[{DateTime.Now:HH:mm:ss}] Processo P{p.pId} desbloqueado (mem: {p.tamanhoMemoria})");
+                    if (lstLog.Items.Count > 0) lstLog.TopIndex = lstLog.Items.Count - 1;
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine($"[LOG] Processo P{p.pId} desbloqueado");
+                }
+
+                AtualizarListaProcessos();
+                AtualizarMemoria();
+            }));
+        }
+
     }
 }

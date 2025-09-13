@@ -27,6 +27,9 @@ namespace MiniSO.Classes
         // Evento quando um processo finaliza (opcional)
         public event Action<Processo>? ProcessoFinalizado;
 
+        // Evento quando um processo é desbloqueado (memória disponível)
+        public event Action<Processo>? ProcessoDesbloqueado;
+
         public bool IsStarted => cts != null && !cts.IsCancellationRequested;
         public bool IsPaused => !pauseEvent.IsSet;
 
@@ -62,11 +65,13 @@ namespace MiniSO.Classes
 
                         if (finalizados.Count > 0)
                         {
+                            // notifica antes de remover
                             foreach (var fin in finalizados)
                             {
                                 try { ProcessoFinalizado?.Invoke(fin); } catch { }
                             }
 
+                            // remove e libera memória
                             lock (ProcessosLock)
                             {
                                 foreach (var fin in finalizados)
@@ -75,7 +80,36 @@ namespace MiniSO.Classes
                                     processos.Remove(fin);
                                 }
                             }
+
+                            // --- Após liberar, tenta desbloquear processos bloqueados (FIFO na lista processos) ---
+                            List<Processo> desbloqueados = new List<Processo>();
+                            lock (ProcessosLock)
+                            {
+                                // copia a lista para evitar modificar durante iteração
+                                var bloqueados = processos.Where(p => p.estado == Estados.Bloqueado).ToList();
+                                foreach (var b in bloqueados)
+                                {
+                                    // tenta alocar agora que liberamos memória
+                                    if (memoria.alocar(b.tamanhoMemoria))
+                                    {
+                                        b.estado = Estados.Pronto;
+                                        desbloqueados.Add(b);
+                                    }
+                                    else
+                                    {
+                                        // se não foi possível alocar para esse bloqueado, provavelmente não há mais memória
+                                        // continue para próximos (ou break); aqui continuamos para tentar todos
+                                    }
+                                }
+                            }
+
+                            // Notifica fora do lock para não bloquear o loop
+                            foreach (var d in desbloqueados)
+                            {
+                                try { ProcessoDesbloqueado?.Invoke(d); } catch { }
+                            }
                         }
+
 
                         // verifica se tem processos; se não, espera e volta (não encerra)
                         bool temProcessos;
@@ -185,16 +219,26 @@ namespace MiniSO.Classes
             lock (ProcessosLock)
             {
                 if (memoria == null) return null; // sistema não iniciado
+
+                Processo p = new Processo(pid, prioridade, tamanho);
+                p.CriarThreads();
+
+                // tenta alocar memória; se der certo => Pronto; senão => Bloqueado
                 if (memoria.alocar(tamanho))
                 {
-                    Processo p = new Processo(pid, prioridade, tamanho);
                     p.estado = Estados.Pronto;
-                    p.CriarThreads();
-                    processos.Add(p);
-                    return p;
                 }
-                return null;
+                else
+                {
+                    p.estado = Estados.Bloqueado;
+                    // não aloca nada e mantém o processo na lista aguardando memória
+                    // (você já terá log de bloqueio se quiser)
+                }
+
+                processos.Add(p);
+                return p;
             }
         }
+
     }
 }
