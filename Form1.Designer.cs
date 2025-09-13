@@ -17,7 +17,6 @@
 
         private void InitializeComponent()
         {
-            components = new System.ComponentModel.Container();
             lvProcessos = new ListView();
             chPid = new ColumnHeader();
             chEstado = new ColumnHeader();
@@ -29,7 +28,7 @@
             buttonPararSO = new Button();
             progressBarMemoria = new ProgressBar();
             lblMemoria = new Label();
-            timer1 = new System.Windows.Forms.Timer(components);
+            lstLog = new ListBox();
             SuspendLayout();
             // 
             // lvProcessos
@@ -39,7 +38,7 @@
             lvProcessos.GridLines = true;
             lvProcessos.Location = new Point(12, 12);
             lvProcessos.Name = "lvProcessos";
-            lvProcessos.Size = new Size(560, 426);
+            lvProcessos.Size = new Size(560, 300);
             lvProcessos.TabIndex = 0;
             lvProcessos.UseCompatibleStateImageBehavior = false;
             lvProcessos.View = View.Details;
@@ -84,6 +83,7 @@
             buttonIniciarSO.Size = new Size(180, 30);
             buttonIniciarSO.TabIndex = 2;
             buttonIniciarSO.Text = "Iniciar Sistema";
+            buttonIniciarSO.Click += buttonIniciarSO_Click_1;
             // 
             // buttonPararSO
             // 
@@ -92,6 +92,7 @@
             buttonPararSO.Size = new Size(180, 30);
             buttonPararSO.TabIndex = 3;
             buttonPararSO.Text = "Parar Sistema";
+            buttonPararSO.Click += buttonPararSO_Click_1;
             // 
             // progressBarMemoria
             // 
@@ -108,16 +109,29 @@
             lblMemoria.TabIndex = 5;
             lblMemoria.Text = "Uso de Memória: 0%";
             // 
+            // lstLog
+            // 
+            lstLog.ItemHeight = 15;
+            lstLog.Location = new Point(12, 320);
+            lstLog.Name = "lstLog";
+            lstLog.Size = new Size(560, 109);
+            lstLog.TabIndex = 6;
+            // 
             // Form1
             // 
+            AutoSizeMode = AutoSizeMode.GrowAndShrink;
             ClientSize = new Size(800, 450);
+            Controls.Add(lstLog);
             Controls.Add(lvProcessos);
             Controls.Add(buttonCriarProcesso);
             Controls.Add(buttonIniciarSO);
             Controls.Add(buttonPararSO);
             Controls.Add(progressBarMemoria);
             Controls.Add(lblMemoria);
+            MaximizeBox = false;
+            MdiChildrenMinimizedAnchorBottom = false;
             Name = "Form1";
+            RightToLeftLayout = true;
             Text = "MiniSO - Simulador de Sistema Operacional";
             ResumeLayout(false);
         }
@@ -135,6 +149,6 @@
         private Button buttonPararSO;
         private ProgressBar progressBarMemoria;
         private Label lblMemoria;
-        private System.Windows.Forms.Timer timer1;
+        private ListBox lstLog;
     }
 }

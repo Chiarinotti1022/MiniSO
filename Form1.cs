@@ -17,23 +17,8 @@ namespace MiniSO
             InitializeComponent();
 
             sistema = new Sistema();
-            escalonador = new Escalonador("RR", 10);
-            sistema.IniciarSistema(10000);
 
-            // Evento para atualizar lista sempre que escalonador trocar de processo
-            escalonador.ProcessoTrocado += () =>
-            {
-                BeginInvoke(new Action(() =>
-                {
-                    AtualizarListaProcessos();
-                    AtualizarMemoria();
-                }));
-            };
-
-            // Eventos dos botões
             buttonCriarProcesso.Click += buttonCriarProcesso_Click;
-            buttonIniciarSO.Click += buttonIniciarSO_Click;
-            buttonPararSO.Click += buttonPararSO_Click;
         }
 
         private void buttonCriarProcesso_Click(object sender, EventArgs e)
@@ -46,29 +31,6 @@ namespace MiniSO
             sistema.CriarProcesso(pid, prioridade, tamanho);
             AtualizarListaProcessos();
             AtualizarMemoria();
-        }
-
-        private async void buttonIniciarSO_Click(object sender, EventArgs e)
-        {
-            buttonIniciarSO.Enabled = false;
-
-            while (!IsDisposed)
-            {
-                // chama o escalonador com delay de 1 segundo
-                await sistema.escalonador.Escalonar(sistema.processos, 1000);
-
-                // Atualiza visual após cada troca de processo
-                AtualizarListaProcessos();
-                AtualizarMemoria();
-            }
-
-
-            buttonIniciarSO.Enabled = true;
-        }
-
-        private void buttonPararSO_Click(object sender, EventArgs e)
-        {
-            sistema.EncerrarSistema();
         }
 
         private void AtualizarListaProcessos()
@@ -126,6 +88,8 @@ namespace MiniSO
 
         private void AtualizarMemoria()
         {
+            if (sistema.memoria == null) return;
+
             int totalMemoria = sistema.memoria.total;
             int usada = totalMemoria - sistema.memoria.livre;
 
@@ -133,6 +97,98 @@ namespace MiniSO
             progressBarMemoria.Value = Math.Min(usada, totalMemoria);
 
             lblMemoria.Text = $"Uso de Memória: {usada}/{totalMemoria}";
+        }
+
+        private void buttonIniciarSO_Click_1(object sender, EventArgs e)
+        {
+            buttonIniciarSO.Enabled = false;
+
+            if (sistema.escalonador == null)
+            {
+                // ativa gerador automático a cada 2s como exemplo
+                sistema.IniciarSistema(10000, autoCriarIntervalMs: 2000);
+                escalonador = sistema.escalonador;
+
+                escalonador.ProcessoTrocado -= OnProcessoTrocado;
+                escalonador.ProcessoTrocado += OnProcessoTrocado;
+
+                sistema.ProcessoFinalizado -= OnProcessoFinalizado;
+                sistema.ProcessoFinalizado += OnProcessoFinalizado;
+            }
+
+            // garante o texto correto do botão de pausa
+            buttonPararSO.Text = sistema.IsPaused ? "Continuar Sistema" : "Parar Sistema";
+
+            // opcional: cria um processo inicial antes do loop rodar no background
+            if (sistema.processos.Count == 0)
+                buttonCriarProcesso_Click(sender, e);
+
+            // monitora cancelamento para reabilitar o botão
+            Task.Run(async () =>
+            {
+                while (sistema.cts != null && !sistema.cts.Token.IsCancellationRequested)
+                    await Task.Delay(500);
+
+                BeginInvoke(new Action(() =>
+                {
+                    buttonIniciarSO.Enabled = true;
+                }));
+            });
+        }
+
+        private void OnProcessoTrocado()
+        {
+            BeginInvoke(new Action(() =>
+            {
+                AtualizarListaProcessos();
+                AtualizarMemoria();
+            }));
+        }
+
+        private void OnProcessoFinalizado(Processo p)
+        {
+            BeginInvoke(new Action(() =>
+            {
+                // adiciona ao log visual (ListBox)
+                if (lstLog != null)
+                {
+                    lstLog.Items.Add($"[{DateTime.Now:HH:mm:ss}] Processo P{p.pId} finalizado (mem: {p.tamanhoMemoria})");
+                    // mantém o último item visível
+                    lstLog.TopIndex = lstLog.Items.Count - 1;
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine($"[LOG] Processo P{p.pId} finalizado");
+                }
+
+                AtualizarListaProcessos();
+                AtualizarMemoria();
+            }));
+        }
+
+        private void buttonPararSO_Click_1(object sender, EventArgs e)
+        {
+            if (sistema == null) return;
+
+            // se sistema não iniciado ainda, ignora
+            if (!sistema.IsStarted)
+            {
+                // talvez você queira iniciar o sistema ao clicar aqui; por enquanto apenas retorna
+                return;
+            }
+
+            if (!sistema.IsPaused)
+            {
+                // pausa a simulação (e o gerador)
+                sistema.PauseSistema();
+                buttonPararSO.Text = "Continuar Sistema";
+            }
+            else
+            {
+                // retoma a simulação
+                sistema.ResumeSistema();
+                buttonPararSO.Text = "Parar Sistema";
+            }
         }
     }
 }

@@ -17,6 +17,9 @@ internal class Escalonador
     {
         if (politica != "RR") return;
 
+        if (processos == null || processos.Count == 0)
+            return;
+
         // Enfileira novos processos
         foreach (var p in processos.Where(p => p.estado == Estados.Pronto && !filaRR.Contains(p)))
             filaRR.Enqueue(p);
@@ -32,8 +35,6 @@ internal class Escalonador
         if (processo.estado == Estados.Pronto)
             filaRR.Enqueue(processo);
 
-        // aqui desacelera sem travar o UI
         await Task.Delay(delayMs);
     }
-
 }
