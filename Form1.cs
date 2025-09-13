@@ -106,7 +106,22 @@ namespace MiniSO
             if (sistema.escalonador == null)
             {
                 // ativa gerador automático a cada 2s como exemplo
-                sistema.IniciarSistema(800, autoCriarIntervalMs: 2000);
+                // lê politica selecionada (se o combo não existir por acaso, fallback para RR)
+                string politica = "RR";
+                if (cbPolitica != null && cbPolitica.SelectedItem != null)
+                    politica = cbPolitica.SelectedItem.ToString();
+
+                if (sistema.escalonador == null)
+                {
+                    sistema.IniciarSistema(800, autoCriarIntervalMs: 2000, politica: politica);
+                    escalonador = sistema.escalonador;
+                    // … resto das inscrições de evento …
+                }
+                else
+                {
+                    // se o sistema já está rodando e o usuário mudou a combo, atualiza a política do escalonador em runtime
+                    sistema.escalonador.politica = politica;
+                }
                 escalonador = sistema.escalonador;
 
                 escalonador.ProcessoTrocado -= OnProcessoTrocado;

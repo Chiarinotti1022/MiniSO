@@ -133,6 +133,16 @@
             Name = "Form1";
             RightToLeftLayout = true;
             Text = "MiniSO - Simulador de Sistema Operacional";
+            // cbPolitica
+            cbPolitica = new ComboBox();
+            cbPolitica.DropDownStyle = ComboBoxStyle.DropDownList;
+            cbPolitica.Items.AddRange(new object[] { "RR", "PRIORIDADE" });
+            cbPolitica.SelectedIndex = 0; // RR por padrão
+            cbPolitica.Location = new Point(590, 200);
+            cbPolitica.Name = "cbPolitica";
+            cbPolitica.Size = new Size(180, 23);
+            cbPolitica.TabIndex = 7;
+            Controls.Add(cbPolitica);
             ResumeLayout(false);
         }
 
@@ -150,5 +160,6 @@
         private ProgressBar progressBarMemoria;
         private Label lblMemoria;
         private ListBox lstLog;
+        private ComboBox cbPolitica;
     }
 }

@@ -36,13 +36,14 @@ namespace MiniSO.Classes
         /// <summary>
         /// Inicia o sistema.
         /// autoCriarIntervalMs: se > 0, ativa gerador automático (intervalo em ms).
+        /// politica: "RR" (padrão) ou "PRIORIDADE"
         /// </summary>
-        public void IniciarSistema(int memoriaTotal, int autoCriarIntervalMs = 0)
+        public void IniciarSistema(int memoriaTotal, int autoCriarIntervalMs = 0, string politica = "RR")
         {
             // se já iniciado, não reinicia outro loop
             if (cts != null && !cts.IsCancellationRequested) return;
 
-            escalonador = new Escalonador("RR", 10);
+            escalonador = new Escalonador(politica, 10); // passa politica escolhida
             memoria = new Memoria(memoriaTotal);
             cts = new CancellationTokenSource();
             pauseEvent.Set(); // garante que esteja em modo "running"
