@@ -9,28 +9,27 @@ namespace MiniSO.Classes
     {
         public string politica { get; set; }
         public int quantum { get; set; }
-
-        // fila usada pelo Round-Robin (RR). Para PRIORIDADE não usamos filaRR persistentemente.
+        // fila usada pelo Round-Robin (RR).
         private Queue<Processo> filaRR = new Queue<Processo>();
 
         public event Action? ProcessoTrocado; // evento que Form vai ouvir
 
         public Escalonador(string politica, int quantum)
         {
-            this.politica = politica ?? "RR";
+            this.politica = string.IsNullOrEmpty(politica) ? "RR" : politica;
             this.quantum = quantum;
         }
 
         public async Task Escalonar(List<Processo> processos, int delayMs)
         {
-            if (politica == null) politica = "RR";
+            if (string.IsNullOrEmpty(politica)) politica = "RR";
 
             if (processos == null || processos.Count == 0)
                 return;
 
             if (politica == "RR")
             {
-                // Round-Robin: mantemos filaRR para preservar ordem entre ticks
+
                 // Enfileira novos processos Pronto que ainda não estão na fila
                 foreach (var p in processos.Where(p => p.estado == Estados.Pronto && !filaRR.Contains(p)))
                     filaRR.Enqueue(p);
@@ -39,11 +38,13 @@ namespace MiniSO.Classes
 
                 var processo = filaRR.Dequeue();
 
-                processo.ExecutarRR(quantum);
+                // IMPORTANT: await aqui para esperar toda a execução do processo (por unidade)
+                await processo.ExecutarRR(quantum, () => ProcessoTrocadoInvoke());
 
+                // atualiza UI ao final do ciclo também (redundante com o callback, mas garante estado final)
                 ProcessoTrocado?.Invoke();
 
-                // só re-enfileira se NÃO tiver finalizado
+                // re-enfileira se não finalizou
                 if (processo.estado == Estados.Pronto)
                     filaRR.Enqueue(processo);
 
@@ -51,31 +52,33 @@ namespace MiniSO.Classes
             }
             else if (politica == "PRIORIDADE" || politica == "PR" || politica == "P")
             {
-                // Prioridade: seleciona, dentre os Prontos, o de maior prioridade (Alta > Baixa).
-                // Em caso de empate, usa menor pId (ou FIFO implícito pela lista).
                 var candidatos = processos.Where(p => p.estado == Estados.Pronto).ToList();
                 if (candidatos.Count == 0) return;
 
-                // Prioridade: enum Prioridade { Baixa = 0, Alta = 1 }
                 var selecionado = candidatos
-                    .OrderByDescending(p => (int)p.prioridade) // Alta (1) primeiro
-                    .ThenBy(p => p.pId) // tie-breaker
+                    .OrderByDescending(p => (int)p.prioridade)
+                    .ThenBy(p => p.pId)
                     .First();
 
-                // Executa com quantum (mantemos fatias de tempo, para comportamento similar ao RR)
-                selecionado.ExecutarRR(quantum);
+                // Await aqui também
+                await selecionado.ExecutarRR(quantum, () => ProcessoTrocadoInvoke());
 
+                // atualiza UI após o ciclo
                 ProcessoTrocado?.Invoke();
 
-                // se selecionado ficou Pronto (não finalizou) — na próxima chamada ele pode ser escolhido novamente,
-                // dependendo de prioridades existentes. Não precisamos re-enfileirar nada aqui.
                 await Task.Delay(delayMs);
             }
             else
             {
-                // política desconhecida: trata como RR por segurança
+                // política desconhecida -> tratar como RR
+                politica = "RR";
                 await Escalonar(processos, delayMs);
             }
+        }
+
+        private void ProcessoTrocadoInvoke()
+        {
+            try { ProcessoTrocado?.Invoke(); } catch { }
         }
     }
 }

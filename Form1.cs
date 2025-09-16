@@ -19,6 +19,7 @@ namespace MiniSO
             sistema = new Sistema();
 
             buttonCriarProcesso.Click += buttonCriarProcesso_Click;
+           
         }
 
         private void buttonCriarProcesso_Click(object sender, EventArgs e)
@@ -69,7 +70,8 @@ namespace MiniSO
                     tItem.SubItems.Add(t.estado.ToString());
                     tItem.SubItems.Add(""); // prioridade opcional
                     tItem.SubItems.Add(t.tamanho.ToString());
-                    tItem.SubItems.Add($"{t.pc}/{t.countPc}");
+                    tItem.SubItems.Add($"{t.pc}/{t.countPc} ");
+
 
                     switch (t.estado)
                     {
@@ -102,7 +104,7 @@ namespace MiniSO
         private void buttonIniciarSO_Click_1(object sender, EventArgs e)
         {
             buttonIniciarSO.Enabled = false;
-
+            numericUpDown1.Enabled = false;
             if (sistema.escalonador == null)
             {
                 // ativa gerador automático a cada 2s como exemplo
@@ -113,8 +115,14 @@ namespace MiniSO
 
                 if (sistema.escalonador == null)
                 {
-                    sistema.IniciarSistema(800, autoCriarIntervalMs: 2000, politica: politica);
+                    int quantumInicial = (int)numericUpDown1.Value;
+                    if (quantumInicial <= 0)
+                        quantumInicial = 10;
+                    sistema.IniciarSistema(800, autoCriarIntervalMs: 5000, politica: politica);
+
                     escalonador = sistema.escalonador;
+                    numericUpDown1.Value = escalonador.quantum;
+
                     // … resto das inscrições de evento …
                 }
                 else
@@ -150,6 +158,7 @@ namespace MiniSO
                 BeginInvoke(new Action(() =>
                 {
                     buttonIniciarSO.Enabled = true;
+                    numericUpDown1.Enabled = true;
                 }));
             });
         }
@@ -228,5 +237,15 @@ namespace MiniSO
             }));
         }
 
+    
+        private void numericUpDown1_ValueChanged(object sender, EventArgs e)
+        {
+            if (escalonador != null)
+            {
+                escalonador.quantum = (int)numericUpDown1.Value;
+            }
+        }
+
+   
     }
 }

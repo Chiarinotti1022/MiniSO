@@ -33,11 +33,6 @@ namespace MiniSO.Classes
         public bool IsStarted => cts != null && !cts.IsCancellationRequested;
         public bool IsPaused => !pauseEvent.IsSet;
 
-        /// <summary>
-        /// Inicia o sistema.
-        /// autoCriarIntervalMs: se > 0, ativa gerador automático (intervalo em ms).
-        /// politica: "RR" (padrão) ou "PRIORIDADE"
-        /// </summary>
         public void IniciarSistema(int memoriaTotal, int autoCriarIntervalMs = 0, string politica = "RR")
         {
             // se já iniciado, não reinicia outro loop

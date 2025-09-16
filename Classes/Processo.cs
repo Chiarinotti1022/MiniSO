@@ -31,6 +31,7 @@ namespace MiniSO.Classes
 
         public List<Thread> threads { get; set; }
         public int QuantumAtual { get; set; } = 0;
+        
         public Processo(int pid, Prioridade prioridade, int tamanho)
         {
             this.pId = pid;
@@ -39,42 +40,67 @@ namespace MiniSO.Classes
             this.tamanhoMemoria = tamanho;
             this.threads = new List<Thread>();
 
+
         }
 
-        public void ExecutarRR(int quantum)
+        public async Task ExecutarRR(int quantum, Action onUnitExecuted = null, int delayPorUnidadeMs = 200)
         {
             QuantumAtual = quantum;
             estado = Estados.Executando;
 
-            var threadsProntas = threads.Where(t => t.estado == Estados.Pronto).ToList();
+            int restante = quantum;
 
-            if (threadsProntas.Count == 0)
+            while (restante > 0)
             {
-                Finalizar(); // seta estado = Finalizado e limpa threads
-                return;
-            }
+                var threadsProntas = threads.Where(t => t.estado == Estados.Pronto).ToList();
+                if (!threadsProntas.Any()) break;
 
-            int quantumPorThread = Math.Max(1, quantum / threadsProntas.Count);
-
-            foreach (var t in threadsProntas)
-            {
-                int unidades = 0;
-                while (unidades < quantumPorThread && t.pc < t.countPc)
+                foreach (var t in threadsProntas.ToList())
                 {
-                    t.Executar();
-                    unidades++;
-                }
+                    if (restante == 0) break;
 
-                if (t.pc >= t.countPc)
-                    FinalizarThread(t);
+                    // marca como executando e notifica UI (vai pintar verde)
+                    t.estado = Estados.Executando;
+                    try { onUnitExecuted?.Invoke(); } catch { }
+
+                    // espera curto para dar chance ao UI atualizar e mostrar o estado
+                    if (delayPorUnidadeMs > 0)
+                        await Task.Delay(delayPorUnidadeMs);
+
+                    // executa 1 unidade
+                    bool terminou = t.ExecutarUnidade();
+
+                    // marca estado de acordo
+                    if (terminou)
+                        t.estado = Estados.Finalizado;
+                    else
+                        t.estado = Estados.Pronto;
+
+                    // notifica UI após executar a unidade
+                    try { onUnitExecuted?.Invoke(); } catch { }
+
+                    restante--;
+                }
             }
 
-            // 🔥 se todas threads morreram → processo finalizado
-            if (threads.Count == 0)
+            // se todas as threads finalizaram → finaliza o processo (libera memória depois no Sistema)
+            if (threads.All(th => th.estado == Estados.Finalizado))
                 Finalizar();
             else
                 estado = Estados.Pronto;
         }
+
+
+
+
+        // FinalizarThread agora só marca a thread como Finalizado
+        public void FinalizarThread(Thread t)
+        {
+            t.estado = Estados.Finalizado;
+            Console.WriteLine($"Thread {t.tId} finalizada");
+            // não remover da lista threads
+        }
+
 
 
 
@@ -110,7 +136,7 @@ namespace MiniSO.Classes
                     pidPai: this.pId,
                     tamanho: maxMemoriaThread,
                     prioridade: (Prioridade)rand.Next(0, 2),
-                    countPc: rand.Next(1, 10)
+                    countPc: rand.Next(1, 30)
                     );
                 s +=($"""
                     Thread: 
@@ -125,11 +151,11 @@ namespace MiniSO.Classes
             }
             return s;
 
-        }
+        }/*
         public void FinalizarThread(Thread t)
         {
             Console.WriteLine($"Thread: {t.tId} finalizada");
-            threads.Remove(t);
+            threads.Remove(t);*/
         }
     }
-}
+

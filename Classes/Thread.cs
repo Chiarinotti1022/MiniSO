@@ -12,7 +12,7 @@ namespace MiniSO.Classes
     {
         public int tId { get; set; }
         public int pIdPai { get; set; }
-        public int tamanho { get; set; }    
+        public int tamanho { get; set; }
         public Estados estado { get; set; }
         public Prioridade prioridade { get; set; }
 
@@ -29,17 +29,20 @@ namespace MiniSO.Classes
             this.countPc = countPc;
         }
 
-        public void Executar()
+        // executa apenas 1 unidade e retorna true se terminou
+        public bool ExecutarUnidade()
         {
-            if (estado == Estados.Pronto)
-            {
-                estado = Estados.Executando;
-            }
-            if (this.pc < countPc && estado == Estados.Executando)
-            {
+            if (this.pc < countPc)
                 pc += 1;
-            }
+
+            return pc >= countPc;
         }
 
+        // opcional: manter Executar() caso algo o use — mas agora preferimos ExecutarUnidade()
+        public void Executar()
+        {
+            ExecutarUnidade();
+        }
     }
 }
+
