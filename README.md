@@ -9,7 +9,7 @@ O projeto é composto por seis principais classes:
 - `Sistema`: Gerencia o ciclo de vida do sistema, inicialização, controle de processos, memória e escalonador.
 - `Escalonador`: Responsável por decidir qual processo será executado, implementando políticas como Round-Robin (RR) e Prioridade.
 - `Memoria`: Gerencia a alocação e liberação de memória para processos.
-- `Processador`: Simula o processador, controlando o estado de execução dos processos.
+- `Processador (em desenvolvimento)`: Simula o processador, controlando o estado de execução dos processos. Atualmente não possui funcionalidade.
 - `Processo`: Representa um processo, contendo informações como PID, prioridade, estado, tamanho de memória e suas threads.
 - `Thread`: Representa uma thread pertencente a um processo, com seu próprio estado, prioridade e contador de instruções.
 
@@ -39,7 +39,7 @@ O projeto é composto por seis principais classes:
 - **Propriedades:**
 	- `politica`: Política de escalonamento ("RR", "PRIORIDADE", "FCFS").
 	- `quantum`: Quantum para RR e PRIORIDADE. (PRIORIDADE -> (Quantum + Prioridade))
-	- `filaRR`: Fila de processos para RR.
+	- `filaRR`: Fila de processos para escalonamentos que utilizam de quantum.
 
 - **Eventos:**
 	- `ProcessoTrocado`: Notifica troca de processo.
@@ -59,7 +59,7 @@ O projeto é composto por seis principais classes:
 	- `alocar(int qtd)`: Tenta alocar memória, retorna sucesso ou falha.
 	- `liberar(int qtd)`: Libera memória, garantindo não exceder o total.
 
-### Processador
+### Processador (em desenvolvimento)
 
 - **Propriedades:**
 	- `freq`: Frequência do processador.
@@ -83,6 +83,7 @@ O projeto é composto por seis principais classes:
 - **Principais métodos:**
 	- `Processo(int pid, Prioridade prioridade, int tamanho)`: Construtor.
 	- `ExecutarRR(int quantum, Action onUnitExecuted = null, int delayPorUnidadeMs = 200)`: Executa o processo segundo RR, alternando entre threads.
+    - `ExecutarFCFS(int delayPorUnidadeMs = 200, Action onUnitExecuted = null)`: Executa o processo segundo FCFS, onde, os processos e threads já são inseridos em ordem ao serem instanciados.
 
 ### Thread
 
@@ -97,9 +98,9 @@ O projeto é composto por seis principais classes:
 
 - **Principais métodos:**
 	- `Thread(int tid, int pidPai, int tamanho, Prioridade prioridade, int countPc)`: Construtor.
-	- `ExecutarUnidade()`: Executa uma unidade de instrução, retorna se finalizou.
+	- `ExecutarUnidade()`: Executa uma unidade de instrução, retorna se finalizou (true/false).
 
-## Relação entre os componentes
+## Relacionamentos
 
 - O `Sistema` inicializa e conecta todos os componentes.
 - O `Escalonador` decide qual `Processo` será executado pelo `Processador`.
