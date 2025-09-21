@@ -17,17 +17,16 @@ namespace MiniSO.Classes
         public CancellationTokenSource cts;
         public readonly object ProcessosLock = new object();
 
-        // pause/resume
         private readonly ManualResetEventSlim pauseEvent = new ManualResetEventSlim(true); // set = running, reset = paused
 
         // estado do gerador
         private Task geradorTask;
         private CancellationTokenSource geradorCts;
 
-        // Evento quando um processo finaliza (opcional)
+        // evento quando um processo finaliza (opcional)
         public event Action<Processo>? ProcessoFinalizado;
 
-        // Evento quando um processo é desbloqueado (memória disponível)
+        // evento quando um processo é desbloqueado (memória disponível)
         public event Action<Processo>? ProcessoDesbloqueado;
 
         public bool IsStarted => cts != null && !cts.IsCancellationRequested;
@@ -52,7 +51,7 @@ namespace MiniSO.Classes
                         // aguarda se estiver pausado
                         pauseEvent.Wait(cts.Token);
 
-                        // pega finalizados (thread-safe)
+                        // pega finalizados
                         List<Processo> finalizados;
                         lock (ProcessosLock)
                         {
@@ -77,7 +76,7 @@ namespace MiniSO.Classes
                                 }
                             }
 
-                            // --- Após liberar, tenta desbloquear processos bloqueados (FIFO na lista processos) ---
+                           //após liberar, tenta desbloquear processos bloqueados
                             List<Processo> desbloqueados = new List<Processo>();
                             lock (ProcessosLock)
                             {
@@ -99,7 +98,7 @@ namespace MiniSO.Classes
                                 }
                             }
 
-                            // Notifica fora do lock para não bloquear o loop
+                            // notifica fora do lock para não bloquear o loop
                             foreach (var d in desbloqueados)
                             {
                                 try { ProcessoDesbloqueado?.Invoke(d); } catch { }

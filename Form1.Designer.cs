@@ -123,8 +123,8 @@
             // cbPolitica
             // 
             cbPolitica.DropDownStyle = ComboBoxStyle.DropDownList;
-            cbPolitica.Items.AddRange(new object[] { "RR", "PRIORIDADE" });
-            cbPolitica.SelectedIndex = 0; // ⬅ aqui o default
+            cbPolitica.Items.AddRange(new object[] { "RR", "PRIORIDADE", "FCFS" });
+            cbPolitica.SelectedIndex = 0; // default
             cbPolitica.Location = new Point(12, 120);
             cbPolitica.Name = "cbPolitica";
             cbPolitica.Size = new Size(180, 28);

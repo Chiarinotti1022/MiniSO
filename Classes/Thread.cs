@@ -29,7 +29,7 @@ namespace MiniSO.Classes
             this.countPc = countPc;
         }
 
-        // executa apenas 1 unidade e retorna true se terminou
+        
         public bool ExecutarUnidade()
         {
             if (this.pc < countPc)
@@ -38,11 +38,7 @@ namespace MiniSO.Classes
             return pc >= countPc;
         }
 
-        // opcional: manter Executar() caso algo o use — mas agora preferimos ExecutarUnidade()
-        public void Executar()
-        {
-            ExecutarUnidade();
-        }
+       
     }
 }
 

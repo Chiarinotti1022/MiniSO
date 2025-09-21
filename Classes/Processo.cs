@@ -43,6 +43,7 @@ namespace MiniSO.Classes
 
         }
 
+        //RR e Prioridade
         public async Task ExecutarRR(int quantum, Action onUnitExecuted = null, int delayPorUnidadeMs = 200)
         {
             QuantumAtual = quantum;
@@ -59,11 +60,11 @@ namespace MiniSO.Classes
                 {
                     if (restante == 0) break;
 
-                    // marca como executando e notifica UI (vai pintar verde)
+                    // marca executado e pinta na UI
                     t.estado = Estados.Executando;
                     try { onUnitExecuted?.Invoke(); } catch { }
 
-                    // espera curto para dar chance ao UI atualizar e mostrar o estado
+                    // espera pra nao bugar a UI
                     if (delayPorUnidadeMs > 0)
                         await Task.Delay(delayPorUnidadeMs);
 
@@ -83,7 +84,7 @@ namespace MiniSO.Classes
                 }
             }
 
-            // se todas as threads finalizaram → finaliza o processo (libera memória depois no Sistema)
+            // se todas as threads finalizaram finaliza o processo (libera memória depois no Sistema)
             if (threads.All(th => th.estado == Estados.Finalizado))
                 Finalizar();
             else
@@ -91,6 +92,42 @@ namespace MiniSO.Classes
         }
 
 
+        //FCFS
+        public async Task ExecutarFCFS(int delayPorUnidadeMs = 200, Action onUnitExecuted = null)
+        {
+            while (threads.Any(t => t.estado != Estados.Finalizado))
+            {
+                var threadsProntas = threads.Where(t => t.estado == Estados.Pronto).ToList();
+
+                foreach (var t in threadsProntas)
+                {
+                    while (t.pc < t.countPc)
+                    {
+                        // entra em execução
+                        t.estado = Estados.Executando;
+                        bool terminou = t.ExecutarUnidade();
+
+                        // atualiza UI após executar 1 instrução
+                        try { onUnitExecuted?.Invoke(); } catch { }
+
+                        // aguarda tempo de CPU
+                        if (delayPorUnidadeMs > 0)
+                            await Task.Delay(delayPorUnidadeMs);
+
+                        // ajusta estado depois da execução
+                        t.estado = terminou ? Estados.Finalizado : Estados.Pronto;
+                    }
+
+                    if (t.estado != Estados.Finalizado)
+                        FinalizarThread(t);
+                }
+
+                if (threads.All(th => th.estado == Estados.Finalizado))
+                    Finalizar();
+                else
+                    estado = Estados.Pronto;
+            }
+        }
 
 
         // FinalizarThread agora só marca a thread como Finalizado
@@ -100,10 +137,6 @@ namespace MiniSO.Classes
             Console.WriteLine($"Thread {t.tId} finalizada");
             // não remover da lista threads
         }
-
-
-
-
 
         public void Bloquear()
         {
@@ -151,11 +184,8 @@ namespace MiniSO.Classes
             }
             return s;
 
-        }/*
-        public void FinalizarThread(Thread t)
-        {
-            Console.WriteLine($"Thread: {t.tId} finalizada");
-            threads.Remove(t);*/
+        }
+       
         }
     }
 

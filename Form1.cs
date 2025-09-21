@@ -107,8 +107,7 @@ namespace MiniSO
             numericUpDown1.Enabled = false;
             if (sistema.escalonador == null)
             {
-                // ativa gerador automático a cada 2s como exemplo
-                // lê politica selecionada (se o combo não existir por acaso, fallback para RR)
+                // ativa gerador automático a cada 5s
                 string politica = "RR";
                 if (cbPolitica != null && cbPolitica.SelectedItem != null)
                     politica = cbPolitica.SelectedItem.ToString();
@@ -145,7 +144,7 @@ namespace MiniSO
             // garante o texto correto do botão de pausa
             buttonPararSO.Text = sistema.IsPaused ? "Continuar Sistema" : "Parar Sistema";
 
-            // opcional: cria um processo inicial antes do loop rodar no background
+            //cria um processo inicial antes do loop rodar no background
             if (sistema.processos.Count == 0)
                 buttonCriarProcesso_Click(sender, e);
 
@@ -200,13 +199,13 @@ namespace MiniSO
             // se sistema não iniciado ainda, ignora
             if (!sistema.IsStarted)
             {
-                // talvez você queira iniciar o sistema ao clicar aqui; por enquanto apenas retorna
+         
                 return;
             }
 
             if (!sistema.IsPaused)
             {
-                // pausa a simulação (e o gerador)
+                // pausa a simulação e o gerador
                 sistema.PauseSistema();
                 buttonPararSO.Text = "Continuar Sistema";
             }
@@ -246,6 +245,23 @@ namespace MiniSO
             }
         }
 
-   
+        private void cbPolitica_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            string politica = cbPolitica.SelectedItem?.ToString();
+
+            if (politica == "FCFS")
+            {
+                numericUpDown1.Enabled = false;
+                numericUpDown1.Value = 0;
+            }
+            else
+            {
+                numericUpDown1.Enabled = true;
+                if (numericUpDown1.Value <= 0)
+                    numericUpDown1.Value = 10;
+            }
+        }
+
+
     }
 }

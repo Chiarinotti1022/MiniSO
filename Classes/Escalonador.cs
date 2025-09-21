@@ -30,7 +30,7 @@ namespace MiniSO.Classes
             if (politica == "RR")
             {
 
-                // Enfileira novos processos Pronto que ainda não estão na fila
+                // enfileira novos processos Pronto que ainda não estão na fila
                 foreach (var p in processos.Where(p => p.estado == Estados.Pronto && !filaRR.Contains(p)))
                     filaRR.Enqueue(p);
 
@@ -38,10 +38,10 @@ namespace MiniSO.Classes
 
                 var processo = filaRR.Dequeue();
 
-                // IMPORTANT: await aqui para esperar toda a execução do processo (por unidade)
+                // espera toda a execução do processo por unidade
                 await processo.ExecutarRR(quantum, () => ProcessoTrocadoInvoke());
 
-                // atualiza UI ao final do ciclo também (redundante com o callback, mas garante estado final)
+                // atualiza UI ao final do ciclo também (redundância)
                 ProcessoTrocado?.Invoke();
 
                 // re-enfileira se não finalizou
@@ -60,13 +60,27 @@ namespace MiniSO.Classes
                     .ThenBy(p => p.pId)
                     .First();
 
-                // Await aqui também
+                // espera execução de cada um
                 await selecionado.ExecutarRR(quantum, () => ProcessoTrocadoInvoke());
 
                 // atualiza UI após o ciclo
                 ProcessoTrocado?.Invoke();
 
                 await Task.Delay(delayMs);
+            }
+            else if (politica == "FCFS")
+            {
+                //processos já são adicionados na ordem FCFS
+                var candidatos = processos.Where(p => p.estado == Estados.Pronto).ToList();
+                if (candidatos.Count == 0) return;
+
+                var selecionado = candidatos.First();
+
+                await selecionado.ExecutarFCFS(delayPorUnidadeMs: 200, onUnitExecuted: () => ProcessoTrocadoInvoke());
+
+                ProcessoTrocado?.Invoke();
+                await Task.Delay(delayMs);
+
             }
             else
             {
