@@ -1,1 +1,109 @@
 # MiniSO
+
+MiniSO é uma simulação de um sistema operacional simplificado, implementando conceitos de escalonamento, gerenciamento de memória, processos e threads.
+
+## Arquitetura Geral
+
+O projeto é composto por seis principais classes:
+
+- `Sistema`: Gerencia o ciclo de vida do sistema, inicialização, controle de processos, memória e escalonador.
+- `Escalonador`: Responsável por decidir qual processo será executado, implementando políticas como Round-Robin (RR) e Prioridade.
+- `Memoria`: Gerencia a alocação e liberação de memória para processos.
+- `Processador`: Simula o processador, controlando o estado de execução dos processos.
+- `Processo`: Representa um processo, contendo informações como PID, prioridade, estado, tamanho de memória e suas threads.
+- `Thread`: Representa uma thread pertencente a um processo, com seu próprio estado, prioridade e contador de instruções.
+
+## Classes e Funções
+
+### Sistema
+
+- **Propriedades:**
+	- `memoria`: Instância de `Memoria`.
+	- `processador`: Instância de `Processador`.
+	- `escalonador`: Instância de `Escalonador`.
+	- `processos`: Lista de processos ativos.
+	- `cts`: Token de cancelamento para controle de execução.
+	- `ProcessosLock`: Objeto para sincronização de acesso à lista de processos.
+	- `pauseEvent`: Controle de pausa do sistema.
+
+- **Eventos:**
+	- `ProcessoFinalizado`: Disparado quando um processo finaliza.
+	- `ProcessoDesbloqueado`: Disparado quando um processo é desbloqueado por memória disponível.
+
+- **Principais métodos:**
+	- `IniciarSistema(int memoriaTotal, int autoCriarIntervalMs = 0, string politica = "RR")`: Inicializa o sistema, memória, escalonador e inicia o loop principal.
+	- Gerenciamento de processos, pausa, retomada e finalização.
+
+### Escalonador
+
+- **Propriedades:**
+	- `politica`: Política de escalonamento ("RR", "PRIORIDADE", "FCFS").
+	- `quantum`: Quantum para RR e PRIORIDADE. (PRIORIDADE -> (Quantum + Prioridade))
+	- `filaRR`: Fila de processos para RR.
+
+- **Eventos:**
+	- `ProcessoTrocado`: Notifica troca de processo.
+
+- **Principais métodos:**
+	- `Escalonador(string politica, int quantum)`: Construtor.
+	- `Escalonar(List<Processo> processos, int delayMs)`: Executa o escalonamento conforme política definida.
+
+### Memoria
+
+- **Propriedades:**
+	- `total`: Memória total disponível.
+	- `livre`: Memória livre.
+
+- **Principais métodos:**
+	- `Memoria(int total)`: Construtor.
+	- `alocar(int qtd)`: Tenta alocar memória, retorna sucesso ou falha.
+	- `liberar(int qtd)`: Libera memória, garantindo não exceder o total.
+
+### Processador
+
+- **Propriedades:**
+	- `freq`: Frequência do processador.
+	- `estado`: Estado atual (`Aguardando`, `Executando`).
+
+- **Principais métodos:**
+	- `Processador(float freq)`: Construtor.
+	- `ExecutarProcesso(Processo p)`: Inicia execução de um processo.
+	- `LiberarProcesso(Processo p)`: Libera o processo em caso de interrupção.
+
+### Processo
+
+- **Propriedades:**
+	- `pId`: Identificador do processo.
+	- `estado`: Estado do processo (`Pronto`, `Executando`, `Bloqueado`, `Finalizado`).
+	- `prioridade`: Prioridade do processo.
+	- `tamanhoMemoria`: Memória ocupada.
+	- `threads`: Lista de threads do processo.
+	- `QuantumAtual`: Quantum atual para RR.
+
+- **Principais métodos:**
+	- `Processo(int pid, Prioridade prioridade, int tamanho)`: Construtor.
+	- `ExecutarRR(int quantum, Action onUnitExecuted = null, int delayPorUnidadeMs = 200)`: Executa o processo segundo RR, alternando entre threads.
+
+### Thread
+
+- **Propriedades:**
+	- `tId`: Identificador da thread.
+	- `pIdPai`: Identificador do processo pai.
+	- `tamanho`: Memória ocupada pela thread.
+	- `estado`: Estado da thread.
+	- `prioridade`: Prioridade da thread.
+	- `pc`: Contador de instruções executadas.
+	- `countPc`: Total de instruções a executar.
+
+- **Principais métodos:**
+	- `Thread(int tid, int pidPai, int tamanho, Prioridade prioridade, int countPc)`: Construtor.
+	- `ExecutarUnidade()`: Executa uma unidade de instrução, retorna se finalizou.
+
+## Relação entre os componentes
+
+- O `Sistema` inicializa e conecta todos os componentes.
+- O `Escalonador` decide qual `Processo` será executado pelo `Processador`.
+- O `Processador` executa o processo, que por sua vez gerencia suas `Threads`.
+- A `Memoria` controla a alocação e liberação para processos e threads.
+- Eventos permitem comunicação entre componentes e atualização da interface.
+
