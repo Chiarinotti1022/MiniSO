@@ -122,7 +122,6 @@ namespace MiniSO
                     escalonador = sistema.escalonador;
                     numericUpDown1.Value = escalonador.quantum;
 
-                    // … resto das inscrições de evento …
                 }
                 else
                 {
