@@ -193,37 +193,11 @@ O projeto é composto por seis principais classes:
 
 - **Starvation em escalonamento por prioridade:** Atualmente, no modo de escalonamento por prioridade, processos de baixa prioridade podem sofrer *starvation* (não chegam a ser executados), pois processos de prioridade alta ocupam continuamente a CPU.
 
-### Causa provável
-
-- A implementação atual favorece processos de alta prioridade sem mecanismos compensatórios (p.ex. não há envelhecimento/aging ou ajuste dinâmico de prioridades), o que permite que processos de alta prioridade sejam sempre escalonados antes dos de baixa prioridade.
-
-### Impacto
-
-- Processos de baixa prioridade podem nunca executar em cargas onde há processos de alta prioridade constantemente prontos, comprometendo justiça e avaliação correta do sistema.
-
-### Mitigações sugeridas (próximos passos)
-
-1. **Aging (Envelhecimento):** Incrementar a prioridade de processos que ficam muito tempo na fila de pronto.  
-2. **Time slice (limite de fatia de CPU):** Garantir que nenhum processo (mesmo de alta prioridade) possa monopolizar a CPU por mais que X unidades consecutivas.  
-3. **Priority decay:** Reduzir a prioridade dos processos que consumiram muita CPU recentemente.  
-4. **Multilevel Feedback Queue (MLFQ):** Implementar filas múltiplas com regras de promoção/rebaixamento.  
-5. **Combinação RR+Prioridade:** Aplicar quantum fixo por faixa de prioridade e usar Round-Robin dentro de cada faixa.
-
-> **Recomendação imediata:** implementar **Aging** + limite de fatia (time slice). Isso é rápido, tem baixo impacto no design atual e resolve o problema de starvation na maior parte dos cenários.
-
 ## Como executar (resumo rápido)
 
 1. Requisitos: .NET 8 SDK instalado.  
 2. Abrir solução no Visual Studio / `dotnet` CLI.  
 3. `dotnet restore` e `dotnet build`.  
 4. Executar o projeto principal (`dotnet run` ou via IDE).
-
-## Testes e validação
-
-- Há simulações internas para validar as políticas (RR, PRIORIDADE, FCFS). Recomenda-se criar cenários automatizados adicionais para reproduzir starvation e validar as mitigações propostas.
-
-## Observações finais
-
-Este README foi atualizado para incluir informações de versão (.NET 8), integrantes do projeto, suporte explícito a FCFS e a documentação do problema conhecido no escalonamento por prioridade, com propostas de mitigação.
 
 
