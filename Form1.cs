@@ -1,4 +1,4 @@
-﻿using MiniSO.Classes;
+using MiniSO.Classes;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -117,11 +117,10 @@ namespace MiniSO
                     int quantumInicial = (int)numericUpDown1.Value;
                     if (quantumInicial <= 0)
                         quantumInicial = 10;
-                    sistema.IniciarSistema(800, autoCriarIntervalMs: 5000, politica: politica);
+                    sistema.IniciarSistema(800, autoCriarIntervalMs: 5000, politica: politica, quantum: quantumInicial);
 
                     escalonador = sistema.escalonador;
                     numericUpDown1.Value = escalonador.quantum;
-
                 }
                 else
                 {
@@ -235,14 +234,19 @@ namespace MiniSO
             }));
         }
 
-    
+
         private void numericUpDown1_ValueChanged(object sender, EventArgs e)
         {
+            int q = (int)numericUpDown1.Value;
+            if (q <= 0) q = 10;
+
             if (escalonador != null)
-            {
-                escalonador.quantum = (int)numericUpDown1.Value;
-            }
+                escalonador.quantum = q;
+
+            if (sistema != null && sistema.escalonador != null)
+                sistema.escalonador.quantum = q;
         }
+
 
         private void cbPolitica_SelectedIndexChanged(object sender, EventArgs e)
         {
