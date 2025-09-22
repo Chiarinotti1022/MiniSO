@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -32,12 +32,13 @@ namespace MiniSO.Classes
         public bool IsStarted => cts != null && !cts.IsCancellationRequested;
         public bool IsPaused => !pauseEvent.IsSet;
 
-        public void IniciarSistema(int memoriaTotal, int autoCriarIntervalMs = 0, string politica = "RR")
+        public void IniciarSistema(int memoriaTotal, int autoCriarIntervalMs = 0, string politica = "RR", int quantum = 10)
         {
             // se já iniciado, não reinicia outro loop
             if (cts != null && !cts.IsCancellationRequested) return;
 
-            escalonador = new Escalonador(politica, 10); // passa politica escolhida
+            // usa o quantum fornecido (não hardcode 10)
+            escalonador = new Escalonador(politica, Math.Max(1, quantum));
             memoria = new Memoria(memoriaTotal);
             cts = new CancellationTokenSource();
             pauseEvent.Set(); // garante que esteja em modo "running"
