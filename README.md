@@ -200,4 +200,30 @@ O projeto é composto por seis principais classes:
 3. `dotnet restore` e `dotnet build`.  
 4. Executar o projeto principal (`dotnet run` ou via IDE).
 
+## Falta implementar e correções (segundo a especificação)
+
+⚪	1. Remover a classe Processador (estudar como ela se encaixa no SO)
+
+⚪	2. Gerenciamento de memória - mínimo: paginação simples com páginas de tamanho fixo e política de alocação first fit ou best fit no mapa de molduras.
+
+⚪	3. Entrada/Saída - modelo de dispositivo genérico de bloco e dispositivo de caractere. Fila de pedidos por  dispositivo, tempos de serviço simulados e geração de interrupções. Deve existir uma 
+	API de E S bloqueante e não bloqueante com espera ativa proibida.
+
+⚪	4. Sistema de Arquivos - Estrutura hierárquica com diretório raiz, diretórios e arquivos. Tabela de nós i simples ou FCB com metadados nome, tamanho, timestamps lógicos, permissões simplificadas, 
+	alocação contígua ou lista encadeada de blocos.
+
+⚪	5. Métricas - O simulador deve produzir estatísticas ao final. Tempo de retorno por processo, tempo de espera em pronto, tempo de resposta primeira CPU, utilização de CPU e de cada 
+	dispositivo, taxa de falta de página, throughput, número de trocas de contexto e sobrecarga total de escalonamento. Gerar log textual com clock e eventos relevantes.
+	⚪ tempo de retorno por processo
+	⚪ tempo de espera em pronto
+	⚪ tempo de resposta CPU
+	⚪ utilização de CPU
+	⚪ taxa de falta de página
+	⚪ throughput
+	⚪ numero de trocas de contexto
+	⚪ log com clock e eventos
+
+⚪	6. Entregáveis 
+	⚪	diretório no github com readme.md atualizado e detalhado
+	⚪	diagrama de classes do sistema no readme.md
 
