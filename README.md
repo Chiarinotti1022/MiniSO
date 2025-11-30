@@ -1,17 +1,22 @@
-<!--# MiniSO
+# MiniSO
 
 MiniSO é uma simulação de um sistema operacional simplificado, implementando conceitos de escalonamento, gerenciamento de memória, processos e threads.
 
-## Arquitetura Geral
+> **Feito em:** .NET 8  
+> **Integrantes:** Luiz Chiarinotti (113079) e Gustavo Tesche (113265)
+
+## Visão Geral
 
 O projeto é composto por seis principais classes:
 
 - `Sistema`: Gerencia o ciclo de vida do sistema, inicialização, controle de processos, memória e escalonador.
-- `Escalonador`: Responsável por decidir qual processo será executado, implementando políticas como Round-Robin (RR) e Prioridade.
+- `Escalonador`: Responsável por decidir qual processo será executado, implementando políticas como Round-Robin (RR), Prioridade e FCFS (First-Come, First-Served).
 - `Memoria`: Gerencia a alocação e liberação de memória para processos.
-- `Processador (em desenvolvimento)`: Simula o processador, controlando o estado de execução dos processos. Atualmente não possui funcionalidade.
+- `Segmento`: Representa um segmento com registradores base-limite.
+- `Processador`: Simula o processador, controlando o estado de execução dos processos.
 - `Processo`: Representa um processo, contendo informações como PID, prioridade, estado, tamanho de memória e suas threads.
 - `Thread`: Representa uma thread pertencente a um processo, com seu próprio estado, prioridade e contador de instruções.
+
 
 ## Classes e Funções
 
@@ -47,23 +52,33 @@ O projeto é composto por seis principais classes:
 - **Principais métodos:**
 	- `Escalonador(string politica, int quantum)`: Construtor.
 	- `Escalonar(List<Processo> processos, int delayMs)`: Executa o escalonamento conforme política definida.
+	- `Envelhecer(List<Processo> processos)`: Envelhece os processos incremento o AgeTicks dele conforme cada ciclo de escalonamento que se passa e o processo ainda não foi executado, alterando a PrioridadeDinamica para Alta, ao ser executado, AgeTicks do processo é zerado. (APENAS NO PRIORIDADE).
+	- `RegistrarTrocaDeContexto`: Simula troca de contexto incrementando TrocasDeContexto em 1 a cada troca registrada e aguarda o tempo de custo configurável na interface.
+	- `RegistrarTrocaDeContextoThread`: Mesmo comportamento do RegistrarTrocaDeContexto porém entre as threads
 
+	
 ### Memoria
 
 - **Propriedades:**
 	- `total`: Memória total disponível.
-	- `livre`: Memória livre.
+	- `segmentos`: Lista dos segmentos.
 
 - **Principais métodos:**
 	- `Memoria(int total)`: Construtor.
-	- `alocar(int qtd)`: Tenta alocar memória, retorna sucesso ou falha.
-	- `liberar(int qtd)`: Libera memória, garantindo não exceder o total.
-
-### Processador (em desenvolvimento)
+	- `alocar(int tamanho)`: Tenta alocar um segmento de memória do tamanho especificado seguindo estratégia: Antes do primeiro segmento existente, Entre segmentos já alocados (buracos) e após o último segmento.
+	- `liberar(int qtd)`: Libera o segmento que começa no endereço baseAddr.
+	
+### Segmento
 
 - **Propriedades:**
-	- `freq`: Frequência do processador.
-	- `estado`: Estado atual (`Aguardando`, `Executando`).
+	- `Base`: Endereço base do segmento.
+	- `Limite`: Endereço limite do segmento.
+
+- **Principais métodos:**
+	- `Segmento(int baseAddr, int limit)`: Construtor.
+
+
+### Processador
 
 - **Principais métodos:**
 	- `Processador(float freq)`: Construtor.
@@ -79,6 +94,12 @@ O projeto é composto por seis principais classes:
 	- `tamanhoMemoria`: Memória ocupada.
 	- `threads`: Lista de threads do processo.
 	- `QuantumAtual`: Quantum atual para RR.
+	- `PrioridadeDinamica`: Prioridade utilizada para o envelhecimento.
+	- `AgeTicks`: Ticks de idade do processo para envelhecimento.
+	- `EscalonadorInstance`: Instância do escalonador atual.
+	- `Segmento Base`: Registrador de Base do processo.
+	- `Segmento Limite`: Registrador de Limite do processo.
+	- `TabelaSegmentos`: Tabela dos segmentos do processo.
 
 - **Principais métodos:**
 	- `Processo(int pid, Prioridade prioridade, int tamanho)`: Construtor.
@@ -104,10 +125,38 @@ O projeto é composto por seis principais classes:
 
 - O `Sistema` inicializa e conecta todos os componentes.
 - O `Escalonador` decide qual `Processo` será executado pelo `Processador`.
-- O `Processador` executa o processo, que por sua vez gerencia suas `Threads`.
+- O `Processador` marca os estados dos processos, que por sua vez gerencia suas `Threads`.
 - A `Memoria` controla a alocação e liberação para processos e threads.
-- Eventos permitem comunicação entre componentes e atualização da interface.-->
+- Eventos permitem comunicação entre componentes e atualização da interface.
 
+## Funcionalidades implementadas
+
+- ✅ Processos e Threads + (Simulador de Trocas de Contexto com Sobrecarga configurável + Contador)
+- ✅ Escalonamento por Round-Robin (RR).
+- ✅ Escalonamento por Prioridade (com quantum ajustável).
+- ✅ Escalonamento por FCFS (First-Come, First-Served).
+- ✅ Segmentação de Memória
+- ✅ Log de eventos dos processos e memória
+
+## Bônus
+- ✅ Escalonamento por Prioridade com Algoritmo de Envelhecimento, evitando inanição.
+
+## Bugs observados
+- Foi observado que quando um processo com uma thread única executa, cada incremento do PC também incrementa Troca de Contexto, a tentativa de corrigir
+este bug foi:
+
+if (EscalonadorInstance.threadAtual?.tId != t.tId)
+{
+    await EscalonadorInstance.RegistrarTrocaDeContextoThread(
+        EscalonadorInstance.threadAtual,
+        t
+    );
+}
+
+Garantindo que para que fosse incrementado a troca de contexto, a thread que estava no escalonador fosse diferente da thread sendo executada, porém o código
+não surtiu efeitos.
+
+<!-- 
 # MiniSO
 
 MiniSO é uma simulação de um sistema operacional simplificado, implementando conceitos de escalonamento, gerenciamento de memória, processos e threads.
@@ -131,7 +180,7 @@ O projeto é composto por seis principais classes:
 - Escalonamento por Round-Robin (RR).
 - Escalonamento por Prioridade (com quantum ajustável).
 - Escalonamento por FCFS (First-Come, First-Served).
-- Gerenciamento simples de memória (alocação e liberação).
+- Segmentação de Memória
 - Simulação de execução de threads dentro dos processos.
 - Eventos para comunicação interna (ex.: `ProcessoFinalizado`, `ProcessoDesbloqueado`, `ProcessoTrocado`).
 
@@ -224,6 +273,6 @@ O projeto é composto por seis principais classes:
 	⚪ log com clock e eventos
 
 ⚪	6. Entregáveis 
-	⚪	diretório no github com readme.md atualizado e detalhado
-	⚪	diagrama de classes do sistema no readme.md
+	⚪	diretório no github com readme.md atualizado e detalhado 
+	⚪	diagrama de classes do sistema no readme.md -->
 
