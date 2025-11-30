@@ -1,10 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics.Metrics;
-using System.Linq;
-using System.Runtime.ConstrainedExecution;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MiniSO.Classes
 {
@@ -19,6 +13,9 @@ namespace MiniSO.Classes
         public int pc { get; set; }
         public int countPc { get; set; }
 
+        public int SegmentBase { get; set; }
+        public int SegmentLimit { get; set; }
+
         public Thread(int tid, int pidPai, int tamanho, Prioridade prioridade, int countPc)
         {
             this.prioridade = prioridade;
@@ -27,18 +24,32 @@ namespace MiniSO.Classes
             this.tId = tid;
             this.pIdPai = pidPai;
             this.countPc = countPc;
+
+            SegmentBase = -1;  // ainda não alocado
+            SegmentLimit = 0;
         }
 
-        
         public bool ExecutarUnidade()
         {
-            if (this.pc < countPc)
-                pc += 1;
+            // Verificação de memória
+            if (SegmentBase >= 0)
+            {
+                int endereco = pc;
+
+                if (endereco < 0 || endereco >= SegmentLimit)
+                {
+                    Console.WriteLine(
+                        $"Erro de memória na Thread {tId}: endereço {endereco} fora dos limites (limit={SegmentLimit})."
+                    );
+                    return true; // encerra thread por falha de memória
+                }
+            }
+
+            // Execução normal
+            if (pc < countPc)
+                pc++;
 
             return pc >= countPc;
         }
-
-       
     }
 }
-

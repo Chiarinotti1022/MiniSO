@@ -28,10 +28,21 @@ namespace MiniSO.Classes
         public Estados estado { get; set; }
         public Prioridade prioridade { get; set; }
         public int tamanhoMemoria { get; set; }
+        public int PrioridadeDinamica { get; set; }
+        public int AgeTicks { get; set; } = 0;
 
         public List<Thread> threads { get; set; }
         public int QuantumAtual { get; set; } = 0;
-        
+
+        public Escalonador EscalonadorInstance { get; set; }
+
+        public int SegmentoBase { get; set; } = -1;
+        public int SegmentoLimite { get; set; } = -1;
+        public List<Segmento> TabelaSegmentos { get; } = new();
+
+
+
+
         public Processo(int pid, Prioridade prioridade, int tamanho)
         {
             this.pId = pid;
@@ -39,6 +50,8 @@ namespace MiniSO.Classes
             this.prioridade = prioridade;
             this.tamanhoMemoria = tamanho;
             this.threads = new List<Thread>();
+            this.PrioridadeDinamica = (int)prioridade;
+            this.AgeTicks = 0;
 
 
         }
@@ -61,6 +74,15 @@ namespace MiniSO.Classes
                     if (restante == 0) break;
 
                     // marca executado e pinta na UI
+                    if (EscalonadorInstance.threadAtual?.tId != t.tId)
+                    {
+                        await EscalonadorInstance.RegistrarTrocaDeContextoThread(
+                            EscalonadorInstance.threadAtual,
+                            t
+                        );
+                    }
+
+
                     t.estado = Estados.Executando;
                     try { onUnitExecuted?.Invoke(); } catch { }
 
@@ -104,6 +126,15 @@ namespace MiniSO.Classes
                     while (t.pc < t.countPc)
                     {
                         // entra em execução
+                        if (EscalonadorInstance.threadAtual?.tId != t.tId)
+                        {
+                            await EscalonadorInstance.RegistrarTrocaDeContextoThread(
+                                EscalonadorInstance.threadAtual,
+                                t
+                            );
+                        }
+
+
                         t.estado = Estados.Executando;
                         bool terminou = t.ExecutarUnidade();
 
@@ -143,12 +174,30 @@ namespace MiniSO.Classes
             estado = Estados.Bloqueado;
             Console.WriteLine($"Processo: {pId} bloqueado");
         }
-        public void Finalizar()
+        public void Finalizar(Memoria memoria = null)
         {
             estado = Estados.Finalizado;
-            threads.Clear();
-            Console.WriteLine($"Processo: {pId} finalizado");
+
+            // Se recebeu a instância de Memoria, entao, libera os segmentos e limpa estruturas.
+            if (memoria != null)
+            {
+                foreach (var seg in TabelaSegmentos)
+                    memoria.Liberar(seg.Base);
+
+                // limpar threads e tabela somente depois de liberar a memória
+                threads.Clear();
+                TabelaSegmentos.Clear();
+            }
+            else
+            {
+                // sistema limpa memoria quando for apropriado
+            }
+
+            Console.WriteLine($"Processo: {pId} finalizado (memoria liberada: {memoria != null})");
         }
+
+
+
         public string CriarThreads()
         {
             Random rand = new Random();

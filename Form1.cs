@@ -4,6 +4,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Drawing;
+using System.Collections;
+using System.Reflection;
 
 namespace MiniSO
 {
@@ -12,24 +14,57 @@ namespace MiniSO
         Sistema sistema;
         Escalonador escalonador;
 
+        private int contadorTrocas = 0;
+
         public Form1()
         {
             InitializeComponent();
 
             sistema = new Sistema();
 
+            // handlers
             buttonCriarProcesso.Click += buttonCriarProcesso_Click;
-           
+            cbPolitica.SelectedIndexChanged += cbPolitica_SelectedIndexChanged;
+            lvProcessos.SelectedIndexChanged += lvProcessos_SelectedIndexChanged;
+
+            // inicializa combo
+            cbPolitica.Items.Clear();
+            cbPolitica.Items.AddRange(new object[] { "RR", "PRIORIDADE", "FCFS" });
+            cbPolitica.SelectedIndex = 0;
         }
 
         private void buttonCriarProcesso_Click(object sender, EventArgs e)
         {
             Random rand = new Random();
-            int pid = rand.Next(1, 1000);
+            int pid = rand.Next(1, 100000);
             Prioridade prioridade = (Prioridade)rand.Next(0, 2);
             int tamanho = rand.Next(50, 300);
 
-            sistema.CriarProcesso(pid, prioridade, tamanho);
+            var p = sistema.CriarProcesso(pid, prioridade, tamanho);
+
+            // log compacto (opção 2)
+            if (p == null)
+            {
+                AddLog($"[{DateTime.Now:HH:mm:ss}] Erro ao criar processo.");
+            }
+            else
+            {
+                if (p.estado == Estados.Pronto)
+                {
+                    string segInfo = GetSegmentInfoCompact(p);
+                    AddLog($"[{DateTime.Now:HH:mm:ss}] [P{p.pId}] Alocado: {segInfo}");
+                }
+                else if (p.estado == Estados.Bloqueado)
+                {
+                    string segInfo = GetSegmentInfoCompact(p);
+                    AddLog($"[{DateTime.Now:HH:mm:ss}] [P{p.pId}] BLOQUEADO ao criar (mem: {p.tamanhoMemoria})");
+                }
+                else
+                {
+                    AddLog($"[{DateTime.Now:HH:mm:ss}] [P{p.pId}] Criado estado={p.estado} (mem: {p.tamanhoMemoria})");
+                }
+            }
+
             AtualizarListaProcessos();
             AtualizarMemoria();
         }
@@ -52,6 +87,7 @@ namespace MiniSO
                 item.SubItems.Add(p.prioridade.ToString());
                 item.SubItems.Add(p.tamanhoMemoria.ToString());
                 item.SubItems.Add(p.QuantumAtual.ToString());
+                item.SubItems.Add(p.AgeTicks.ToString());
 
                 switch (p.estado)
                 {
@@ -63,7 +99,7 @@ namespace MiniSO
 
                 lvProcessos.Items.Add(item);
 
-                // Threads do processo
+                // Threads do processo (mostra a mesma info de antes)
                 foreach (var t in p.threads)
                 {
                     var tItem = new ListViewItem($"  └ T{t.tId}");
@@ -71,7 +107,6 @@ namespace MiniSO
                     tItem.SubItems.Add(""); // prioridade opcional
                     tItem.SubItems.Add(t.tamanho.ToString());
                     tItem.SubItems.Add($"{t.pc}/{t.countPc} ");
-
 
                     switch (t.estado)
                     {
@@ -92,8 +127,10 @@ namespace MiniSO
         {
             if (sistema.memoria == null) return;
 
-            int totalMemoria = sistema.memoria.total;
-            int usada = totalMemoria - sistema.memoria.livre;
+            int totalMemoria = sistema.memoria.Total;
+
+            // soma de todos os limites já alocados
+            int usada = sistema.memoria.Segmentos.Sum(s => s.Limite);
 
             progressBarMemoria.Maximum = totalMemoria;
             progressBarMemoria.Value = Math.Min(usada, totalMemoria);
@@ -101,10 +138,16 @@ namespace MiniSO
             lblMemoria.Text = $"Uso de Memória: {usada}/{totalMemoria}";
         }
 
+
         private void buttonIniciarSO_Click_1(object sender, EventArgs e)
         {
             buttonIniciarSO.Enabled = false;
             numericUpDown1.Enabled = false;
+
+            contadorTrocas = 0;
+            if (lblTrocas != null)
+                lblTrocas.Text = "Trocas de Contexto: 0";
+
             if (sistema.escalonador == null)
             {
                 // ativa gerador automático a cada 5s
@@ -117,10 +160,14 @@ namespace MiniSO
                     int quantumInicial = (int)numericUpDown1.Value;
                     if (quantumInicial <= 0)
                         quantumInicial = 10;
-                    sistema.IniciarSistema(800, autoCriarIntervalMs: 5000, politica: politica, quantum: quantumInicial);
+                    sistema.IniciarSistema(1024, autoCriarIntervalMs: 5000, politica: politica, quantum: quantumInicial);
 
                     escalonador = sistema.escalonador;
                     numericUpDown1.Value = escalonador.quantum;
+                    if (numericOverhead != null)
+                    {
+                        escalonador.TempoDeTrocaDeContexto = (int)numericOverhead.Value;
+                    }
                 }
                 else
                 {
@@ -129,6 +176,7 @@ namespace MiniSO
                 }
                 escalonador = sistema.escalonador;
 
+                // conecta eventos do sistema para log e UI
                 escalonador.ProcessoTrocado -= OnProcessoTrocado;
                 escalonador.ProcessoTrocado += OnProcessoTrocado;
 
@@ -164,6 +212,9 @@ namespace MiniSO
         {
             BeginInvoke(new Action(() =>
             {
+                contadorTrocas++;
+                lblTrocas.Text = $"Trocas de Contexto: {contadorTrocas}";
+
                 AtualizarListaProcessos();
                 AtualizarMemoria();
             }));
@@ -173,12 +224,12 @@ namespace MiniSO
         {
             BeginInvoke(new Action(() =>
             {
-                // adiciona ao log visual (ListBox)
+                // compact log: processo finalizado + segmentos (se houver)
+                string segInfo = GetSegmentInfoCompact(p);
                 if (lstLog != null)
                 {
-                    lstLog.Items.Add($"[{DateTime.Now:HH:mm:ss}] Processo P{p.pId} finalizado (mem: {p.tamanhoMemoria})");
-                    // mantém o último item visível
-                    lstLog.TopIndex = lstLog.Items.Count - 1;
+                    lstLog.Items.Add($"[{DateTime.Now:HH:mm:ss}] [P{p.pId}] Finalizado (mem: {p.tamanhoMemoria}) {segInfo}");
+                    lstLog.TopIndex = Math.Max(0, lstLog.Items.Count - 1);
                 }
                 else
                 {
@@ -197,7 +248,6 @@ namespace MiniSO
             // se sistema não iniciado ainda, ignora
             if (!sistema.IsStarted)
             {
-         
                 return;
             }
 
@@ -219,9 +269,10 @@ namespace MiniSO
         {
             BeginInvoke(new Action(() =>
             {
+                string segInfo = GetSegmentInfoCompact(p);
                 if (lstLog != null)
                 {
-                    lstLog.Items.Add($"[{DateTime.Now:HH:mm:ss}] Processo P{p.pId} desbloqueado (mem: {p.tamanhoMemoria})");
+                    lstLog.Items.Add($"[{DateTime.Now:HH:mm:ss}] [P{p.pId}] DESBLOQUEADO -> Alocado: {segInfo}");
                     if (lstLog.Items.Count > 0) lstLog.TopIndex = lstLog.Items.Count - 1;
                 }
                 else
@@ -234,7 +285,6 @@ namespace MiniSO
             }));
         }
 
-
         private void numericUpDown1_ValueChanged(object sender, EventArgs e)
         {
             int q = (int)numericUpDown1.Value;
@@ -246,7 +296,6 @@ namespace MiniSO
             if (sistema != null && sistema.escalonador != null)
                 sistema.escalonador.quantum = q;
         }
-
 
         private void cbPolitica_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -265,6 +314,123 @@ namespace MiniSO
             }
         }
 
+        // configuração de tempo de troca de contexto
+        private void numericOverhead_ValueChanged(object sender, EventArgs e)
+        {
+            if (escalonador != null)
+                escalonador.TempoDeTrocaDeContexto = (int)numericOverhead.Value;
 
+            if (sistema != null && sistema.escalonador != null)
+                sistema.escalonador.TempoDeTrocaDeContexto = (int)numericOverhead.Value;
+        }
+
+        private void lvProcessos_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            // opcional: exibir detalhes do processo selecionado no log quando clicado
+            if (lvProcessos.SelectedItems.Count == 0) return;
+            var text = lvProcessos.SelectedItems[0].Text; // ex: "P23" ou "  └ T2"
+            if (!text.StartsWith("P")) return;
+
+            int pid;
+            if (!int.TryParse(text.Substring(1), out pid)) return;
+
+            var p = sistema.processos.FirstOrDefault(x => x.pId == pid);
+            if (p == null) return;
+
+            string segInfo = GetSegmentInfoCompact(p);
+            AddLog($"[{DateTime.Now:HH:mm:ss}] [P{p.pId}] Detalhes: estado={p.estado} mem={p.tamanhoMemoria} {segInfo}");
+        }
+
+        // ---------- Helpers de log / reflexão ----------
+
+        private void AddLog(string linha)
+        {
+            if (lstLog != null)
+            {
+                lstLog.Items.Add(linha);
+                lstLog.TopIndex = Math.Max(0, lstLog.Items.Count - 1);
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine(linha);
+            }
+        }
+
+        /// <summary>
+        /// Tenta extrair informação de segmentos do Processo (via reflexão) e retorna em formato compacto:
+        /// Ex: "Base=320 Limit=140; Base=460 Limit=60"
+        /// Se não encontrar, retorna "mem:<tamanho>"
+        /// </summary>
+        private string GetSegmentInfoCompact(Processo p)
+        {
+            if (p == null) return "";
+
+            try
+            {
+                var type = p.GetType();
+
+                // busca por propriedade que tenha "segment" no nome (Segmentos, TabelaSegmentos, Segments...)
+                var segProp = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                                  .FirstOrDefault(pr => pr.Name.IndexOf("segment", StringComparison.OrdinalIgnoreCase) >= 0
+                                                     || pr.Name.IndexOf("segmento", StringComparison.OrdinalIgnoreCase) >= 0
+                                                     || pr.Name.IndexOf("table", StringComparison.OrdinalIgnoreCase) >= 0);
+
+                if (segProp != null)
+                {
+                    var segVal = segProp.GetValue(p);
+                    if (segVal is IEnumerable segEnumerable)
+                    {
+                        var parts = new System.Collections.Generic.List<string>();
+                        foreach (var seg in segEnumerable)
+                        {
+                            if (seg == null) continue;
+                            
+                            var segType = seg.GetType();
+                            var baseProp = segType.GetProperty("Base") ?? segType.GetProperty("base") ?? segType.GetProperty("Start") ?? segType.GetProperty("Address");
+                            var limitProp = segType.GetProperty("Limite") ?? segType.GetProperty("limite") ?? segType.GetProperty("Length") ?? segType.GetProperty("Size");
+
+                            var baseVal = baseProp != null ? baseProp.GetValue(seg)?.ToString() : null;
+                            var limitVal = limitProp != null ? limitProp.GetValue(seg)?.ToString() : null;
+
+                            if (baseVal != null || limitVal != null)
+                            {
+                                parts.Add($"Base={baseVal ?? "?"} Limit={limitVal ?? "?"}");
+                            }
+                            else
+                            {
+                                // fallback: ToString()
+                                parts.Add(seg.ToString());
+                            }
+                        }
+
+                        if (parts.Count > 0)
+                            return string.Join(" ; ", parts);
+                    }
+                }
+
+                // fallback: procurar propriedades individuais no Processo (SegmentBase / SegmentLimit)
+                var baseP = type.GetProperty("SegmentoBase") ?? type.GetProperty("BaseSegmento");
+                var limitP = type.GetProperty("SegmentoLimite") ?? type.GetProperty("LimiteSegmento");
+                if (baseP != null && limitP != null)
+                {
+                    var b = baseP.GetValue(p)?.ToString();
+                    var l = limitP.GetValue(p)?.ToString();
+                    return $"Base={b} Limit={l}";
+                }
+
+                // fallback final: talvez exista LastSegmentFault ou LastFault a mostrar
+                var lastFaultProp = type.GetProperty("LastSegmentFault") ?? type.GetProperty("LastFault");
+                if (lastFaultProp != null)
+                {
+                    var fault = lastFaultProp.GetValue(p);
+                    if (fault != null)
+                        return $"fault={fault}";
+                }
+            }
+            catch { /* ignore reflexão */ }
+
+            // se nada encontrado, retorna simplesmente o tamanho
+            return $"mem:{p.tamanhoMemoria}";
+        }
     }
 }

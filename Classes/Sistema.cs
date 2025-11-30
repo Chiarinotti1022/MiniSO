@@ -23,10 +23,10 @@ namespace MiniSO.Classes
         private Task geradorTask;
         private CancellationTokenSource geradorCts;
 
-        // evento quando um processo finaliza (opcional)
+        // evento quando um processo finaliza 
         public event Action<Processo>? ProcessoFinalizado;
 
-        // evento quando um processo é desbloqueado (memória disponível)
+        // evento quando um processo é desbloqueado
         public event Action<Processo>? ProcessoDesbloqueado;
 
         public bool IsStarted => cts != null && !cts.IsCancellationRequested;
@@ -37,7 +37,7 @@ namespace MiniSO.Classes
             // se já iniciado, não reinicia outro loop
             if (cts != null && !cts.IsCancellationRequested) return;
 
-            // usa o quantum fornecido (não hardcode 10)
+            // usa o quantum fornecido
             escalonador = new Escalonador(politica, Math.Max(1, quantum));
             memoria = new Memoria(memoriaTotal);
             cts = new CancellationTokenSource();
@@ -72,12 +72,15 @@ namespace MiniSO.Classes
                             {
                                 foreach (var fin in finalizados)
                                 {
-                                    memoria.liberar(fin.tamanhoMemoria);
+                                    fin.Finalizar(memoria); 
                                     processos.Remove(fin);
                                 }
+
+
+
                             }
 
-                           //após liberar, tenta desbloquear processos bloqueados
+                            //após liberar, tenta desbloquear processos bloqueados
                             List<Processo> desbloqueados = new List<Processo>();
                             lock (ProcessosLock)
                             {
@@ -86,16 +89,20 @@ namespace MiniSO.Classes
                                 foreach (var b in bloqueados)
                                 {
                                     // tenta alocar agora que liberamos memória
-                                    if (memoria.alocar(b.tamanhoMemoria))
+                                    int baseAddr2 = memoria.Alocar(b.tamanhoMemoria);
+                                    if (baseAddr2 >= 0)
                                     {
+                                        var segmento = new Segmento(baseAddr2, b.tamanhoMemoria);
+                                        b.TabelaSegmentos.Add(segmento);
+
+                                        b.SegmentoBase = segmento.Base;
+                                        b.SegmentoLimite = segmento.Limite;
+
                                         b.estado = Estados.Pronto;
                                         desbloqueados.Add(b);
                                     }
-                                    else
-                                    {
-                                        // se não foi possível alocar para esse bloqueado, provavelmente não há mais memória
-                                        // continue para próximos (ou break); aqui continuamos para tentar todos
-                                    }
+
+
                                 }
                             }
 
@@ -154,7 +161,6 @@ namespace MiniSO.Classes
             cts?.Cancel();
         }
 
-        // ---------- Pause / Resume ----------
         public void PauseSistema()
         {
             pauseEvent.Reset(); // trava o loop e o gerador
@@ -165,7 +171,6 @@ namespace MiniSO.Classes
             pauseEvent.Set();   // libera o loop e o gerador
         }
 
-        // ---------- Gerador controlável ----------
         public void StartGerador(int autoCriarIntervalMs)
         {
             // se já rodando, ignora
@@ -209,32 +214,44 @@ namespace MiniSO.Classes
             geradorCts = null;
         }
 
-        // ---------- Criar processo ----------
         public Processo CriarProcesso(int pid, Prioridade prioridade, int tamanho)
         {
             lock (ProcessosLock)
             {
-                if (memoria == null) return null; // sistema não iniciado
+                if (memoria == null) return null;
 
                 Processo p = new Processo(pid, prioridade, tamanho);
                 p.CriarThreads();
 
-                // tenta alocar memória; se der certo => Pronto; senão => Bloqueado
-                if (memoria.alocar(tamanho))
+                int baseAddr = memoria.Alocar(tamanho);
+
+                if (baseAddr >= 0)
                 {
                     p.estado = Estados.Pronto;
+
+                    var segmento = new Segmento(baseAddr, tamanho);
+                    p.TabelaSegmentos.Add(segmento);
+
+                    p.SegmentoBase = segmento.Base;
+                    p.SegmentoLimite = segmento.Limite;
                 }
                 else
                 {
                     p.estado = Estados.Bloqueado;
-                    // não aloca nada e mantém o processo na lista aguardando memória
-                    // (você já terá log de bloqueio se quiser)
                 }
 
                 processos.Add(p);
                 return p;
             }
         }
+
+
+
+        public int GetTotalTrocasContexto()
+        {
+            return escalonador?.TrocasDeContexto ?? 0;
+        }
+
 
     }
 }
